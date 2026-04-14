@@ -1,0 +1,179 @@
+// STR Comply — Prisma Schema
+// Normative source: SRD v1.1, Section 12.2
+// Provider: PostgreSQL (Neon)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// User
+// Stores authenticated users. Created on first magic-link sign-in.
+// ---------------------------------------------------------------------------
+model User {
+  id             String           @id @default(cuid())
+  email          String           @unique
+  name           String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  watchlistItems WatchlistItem[]
+  telemetry      TelemetryEvent[]
+}
+
+// ---------------------------------------------------------------------------
+// Market
+// Core compliance record for one jurisdiction (city or county).
+// strStatus, permitRequired, ownerOccupancyRequired, freshnessStatus, and
+// supportStatus are stored as plain strings rather than enums so that future
+// values can be added via seed/migration without a schema change.
+// Valid values are documented on each field.
+// ---------------------------------------------------------------------------
+model Market {
+  id                     String           @id @default(cuid())
+  slug                   String           @unique   // URL-safe identifier, e.g. "santa-monica"
+  name                   String                     // Display name, e.g. "Santa Monica"
+  stateCode              String           @default("CA")
+  countyName             String?
+  regionLabel            String?                    // e.g. "Westside LA"
+
+  // Compliance status fields
+  // strStatus:             "allowed" | "conditional" | "not_allowed"
+  // permitRequired:        "yes" | "no" | "varies"
+  // ownerOccupancyRequired:"yes" | "no" | "varies"
+  // freshnessStatus:       "fresh" | "review_due" | "needs_review"
+  // supportStatus:         "supported" | "unsupported" | "archived"
+  strStatus              String
+  permitRequired         String
+  ownerOccupancyRequired String
+  freshnessStatus        String
+  supportStatus          String           @default("supported")
+
+  summary                String           // 120–180 word plain-English summary
+  notableRestrictions    String?          // Optional short highlights for the card
+
+  lastReviewedAt         DateTime
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  aliases                MarketAlias[]
+  rules                  MarketRule[]
+  sources                MarketSource[]
+  watchlistItems         WatchlistItem[]
+  telemetry              TelemetryEvent[]
+}
+
+// ---------------------------------------------------------------------------
+// MarketAlias
+// Powers the search endpoint. One row per searchable alias string.
+// E.g. "la", "city of la", "los angeles ca" all point to the LA market.
+// The alias index makes lookup fast even as market count grows.
+// ---------------------------------------------------------------------------
+model MarketAlias {
+  id        String   @id @default(cuid())
+  marketId  String
+  alias     String                         // Normalized lowercase alias string
+  createdAt DateTime @default(now())
+
+  market    Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+
+  @@unique([marketId, alias])
+  @@index([alias])
+}
+
+// ---------------------------------------------------------------------------
+// MarketRule
+// Individual compliance rules attached to a market (permit requirements,
+// nightly caps, owner-occupancy, etc.). Ordered by displayOrder for rendering.
+// jurisdictionLevel is nullable — not all rules have a clear jurisdiction level.
+// ---------------------------------------------------------------------------
+model MarketRule {
+  id                String   @id @default(cuid())
+  marketId          String
+  ruleKey           String                 // Machine key, e.g. "nightly_cap"
+  label             String                 // Display label, e.g. "Nightly Cap"
+  value             String                 // Display value, e.g. "30 nights/year (unhosted)"
+  details           String?                // Optional expanded explanation
+  codeRef           String?                // e.g. "SMMC § 6.20.050"
+  codeUrl           String?                // Link to cited code section
+  displayOrder      Int      @default(0)
+  // jurisdictionLevel: "city" | "county" | "state" — nullable, not all rules have a level
+  jurisdictionLevel String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  market            Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+
+  @@index([marketId, ruleKey])
+}
+
+// ---------------------------------------------------------------------------
+// MarketSource
+// Official sources backing a market record (city pages, municipal codes, etc.).
+// Ordered by displayOrder. Clicking a source is tracked via telemetry.
+// ---------------------------------------------------------------------------
+model MarketSource {
+  id           String   @id @default(cuid())
+  marketId     String
+  title        String
+  url          String
+  // sourceType: "official_program_page" | "municipal_code" | "tax_registration"
+  //             | "city_ordinance" | "other"
+  sourceType   String
+  publisher    String?
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  market       Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+
+  @@index([marketId])
+}
+
+// ---------------------------------------------------------------------------
+// WatchlistItem
+// Saves a market to a user's watchlist. The unique constraint prevents
+// duplicates. This table is also the foundation for future change alerts:
+// query watchlist items where market.updatedAt > user's last notification.
+// ---------------------------------------------------------------------------
+model WatchlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  marketId  String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  market    Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, marketId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// TelemetryEvent
+// Lightweight event log for usage analytics. userId and marketId are nullable
+// so anonymous users can be tracked. metadataJson holds any extra context.
+// The endpoint is fire-and-forget — it never fails the client.
+// ---------------------------------------------------------------------------
+model TelemetryEvent {
+  id           String   @id @default(cuid())
+  userId       String?                    // null for anonymous users
+  marketId     String?                    // null for non-market events
+  sessionId    String?                    // client-generated session ID
+  // eventName: "search_performed" | "result_viewed" | "source_clicked"
+  //            | "market_saved" | "market_removed" | "unsupported_market_seen"
+  eventName    String
+  queryText    String?                    // the raw search query, if applicable
+  metadataJson Json?                      // arbitrary extra context
+  createdAt    DateTime @default(now())
+
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  market       Market?  @relation(fields: [marketId], references: [id], onDelete: SetNull)
+
+  @@index([eventName, createdAt])
+  @@index([marketId])
+  @@index([userId])
+}

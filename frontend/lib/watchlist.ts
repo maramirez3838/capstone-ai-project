@@ -1,55 +1,94 @@
 'use client'
 
-// Watchlist state backed by localStorage during UI phase.
-// When BE joins, replace persist/read calls with POST/DELETE /api/watchlist.
+// Watchlist hook — fetches from and writes to the real API.
+// All routes require auth. Until NextAuth is wired in, the API returns
+// 401 and the hook gracefully shows an empty watchlist.
+// When auth is added, this file does not need to change.
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { logEvent } from './telemetry'
 
-const STORAGE_KEY = 'str_comply_watchlist'
 const MAX_ITEMS = 25
 
-interface WatchlistEntry {
-  slug: string
+export interface WatchlistEntry {
+  marketSlug: string
   savedAt: string // ISO 8601
+  market: {
+    name: string
+    strStatus: string
+    countyName: string | null
+    freshnessStatus: string
+    permitRequired: string
+    ownerOccupancyRequired: string
+    lastReviewedAt: string
+  }
 }
 
 export function useWatchlist() {
   const [entries, setEntries] = useState<WatchlistEntry[]>([])
   const [mounted, setMounted] = useState(false)
 
-  // Read from localStorage after mount to avoid SSR hydration mismatch
-  useEffect(() => {
-    setMounted(true)
+  const fetchWatchlist = useCallback(async () => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      setEntries(raw ? JSON.parse(raw) : [])
+      const res = await fetch('/api/watchlist')
+      if (res.status === 401) {
+        // Not authenticated — empty watchlist is the correct state
+        setEntries([])
+        return
+      }
+      if (!res.ok) {
+        setEntries([])
+        return
+      }
+      const data: WatchlistEntry[] = await res.json()
+      setEntries(data)
     } catch {
       setEntries([])
     }
   }, [])
 
-  function persist(updated: WatchlistEntry[]) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-    setEntries(updated)
-  }
+  useEffect(() => {
+    setMounted(true)
+    fetchWatchlist()
+  }, [fetchWatchlist])
 
-  function save(slug: string) {
-    if (entries.some((e) => e.slug === slug)) return
+  async function save(slug: string) {
+    if (entries.some((e) => e.marketSlug === slug)) return
     if (entries.length >= MAX_ITEMS) return
-    const updated = [...entries, { slug, savedAt: new Date().toISOString() }]
-    persist(updated)
-    logEvent('market_saved', { marketSlug: slug })
+
+    try {
+      const res = await fetch('/api/watchlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ marketSlug: slug }),
+      })
+      if (res.ok) {
+        logEvent('market_saved', { marketSlug: slug })
+        // Re-fetch to get the server-authoritative list with embedded market data
+        await fetchWatchlist()
+      }
+    } catch {
+      // Save silently fails — user can retry
+    }
   }
 
-  function remove(slug: string) {
-    const updated = entries.filter((e) => e.slug !== slug)
-    persist(updated)
-    logEvent('market_removed', { marketSlug: slug })
+  async function remove(slug: string) {
+    try {
+      const res = await fetch(`/api/watchlist/${encodeURIComponent(slug)}`, {
+        method: 'DELETE',
+      })
+      if (res.ok) {
+        logEvent('market_removed', { marketSlug: slug })
+        // Optimistically update — remove from local state immediately
+        setEntries((prev) => prev.filter((e) => e.marketSlug !== slug))
+      }
+    } catch {
+      // Remove silently fails — user can retry
+    }
   }
 
   function isSaved(slug: string): boolean {
-    return entries.some((e) => e.slug === slug)
+    return entries.some((e) => e.marketSlug === slug)
   }
 
   const isAtLimit = entries.length >= MAX_ITEMS

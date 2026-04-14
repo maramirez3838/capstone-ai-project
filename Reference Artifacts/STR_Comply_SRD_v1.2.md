@@ -1,11 +1,12 @@
 # STR Comply — Software Requirements Document (SRD)
-**Version:** 1.1
+**Version:** 1.2
 **Date:** April 13, 2026
 **Derived From:** STR Comply PRD v2.1
 **Product Type:** Desktop-first web application
 **Primary Build Goal:** Enable Claude to implement a clean MVP with minimal extra libraries, minimal hidden assumptions, and low backend complexity.
 
 ## Changelog
+- v1.2 (2026-04-13): Backend fully wired. Updated section 5.1 to reflect confirmed runtime stack (Prisma 7 + `@prisma/adapter-pg` + `pg`, Zod on all API route handlers, `tsx` for seed script, Neon confirmed as database host, Resend recommended for NextAuth magic link). Updated section 14.4 DELETE endpoint path to use `:marketSlug` (matches implemented route handler `[marketSlug]/route.ts`). Updated section 23.1 project structure to reflect actual post-backend file layout. Updated section 27 implementation order to note completed steps. Updated section 30 Definition of Done checklist to mark completed items.
 - v1.1 (2026-04-13): Added `jurisdictionLevel` field to `MarketRule` model (section 12.2) and corresponding enumeration (section 13.10). This field identifies which level of government mandates each rule (city, county, or state). Field is nullable — not all rules will have a level assigned. Added `jurisdictionLevel` to the GET /api/markets/:slug rule shape (section 14.2). No other sections changed.
 - v1.0 (2026-04-11): Initial SRD derived from PRD v2.1.
 
@@ -102,12 +103,24 @@ This section is normative. Claude should default to this stack unless the user e
 ## 5.1 Core Stack
 - **Frontend + Backend Framework:** Next.js (App Router)
 - **Language:** TypeScript
-- **Database:** PostgreSQL
-- **ORM:** Prisma
-- **Authentication:** NextAuth/Auth.js with email magic link or credentials for MVP
+- **Database:** PostgreSQL — confirmed host: **Neon** (serverless PostgreSQL)
+- **ORM:** Prisma — confirmed version: **Prisma 7** with `@prisma/adapter-pg` and `pg` package (required for Prisma 7 connection handling; config lives in `prisma.config.ts`)
+- **Input Validation:** Zod — applied on all API route handlers
+- **Seed Runtime:** `tsx` — used to execute `prisma/seed.ts` directly
+- **Authentication:** NextAuth/Auth.js with email magic link — **Resend** is the recommended email provider for MVP
 - **Styling:** Tailwind CSS
-- **Hosting target:** Vercel for app, Neon/Supabase/Postgres provider for database
+- **Hosting target:** Vercel for app, Neon for database
 - **Telemetry:** simple server-side and client-side event logging into Postgres initially
+
+### Prisma 7 CLI note
+Prisma CLI does not auto-load `.env.local`. Prefix DB commands manually:
+```bash
+# Run a migration
+DATABASE_URL=$(grep '^DATABASE_URL=' .env.local | cut -d'=' -f2-) npx prisma migrate dev --name <name>
+
+# Re-seed the database
+DATABASE_URL=$(grep '^DATABASE_URL=' .env.local | cut -d'=' -f2-) npx tsx prisma/seed.ts
+```
 
 ## 5.2 Why this stack
 - One codebase
@@ -147,7 +160,7 @@ Next.js Web App
    |- Auth Layer
    |
    v
-PostgreSQL
+PostgreSQL (Neon)
    |- users
    |- markets
    |- market_rules
@@ -377,7 +390,7 @@ Each telemetry event shall store:
 ## 10.3 Security
 - Authentication required for watchlist actions
 - Server-side authorization checks on all watchlist mutations
-- Input validation on all APIs
+- Input validation on all APIs (Zod)
 - Use parameterized queries via ORM only
 - No secrets exposed to client
 - Basic rate limiting is recommended for search and auth endpoints
@@ -696,12 +709,15 @@ Required
 - return 201 on create
 - return 200 if already saved
 
-## 14.4 DELETE /api/watchlist/:marketId
+## 14.4 DELETE /api/watchlist/:marketSlug
 ### Auth
 Required
 
+### Route param
+`:marketSlug` — the market's slug string (e.g. `santa-monica`). The route handler is at `app/api/watchlist/[marketSlug]/route.ts`.
+
 ### Behavior
-- remove item if exists
+- resolve market by slug, then remove watchlist item for current user if exists
 - return 204 on success
 
 ## 14.5 GET /api/watchlist
@@ -846,14 +862,13 @@ Each market seed record must include:
 - at least one official source row
 
 ## 18.1 Seed File Structure
-Claude should create seed files in a format such as:
-- `prisma/seed.ts`
-- `data/markets.ts`
+Canonical seed data lives in `backend/data/markets.ts` — a typed array shared across the project. The seed script at `frontend/prisma/seed.ts` imports from this file.
 
-Recommended approach:
-- maintain a typed array in source control
-- seed database from that typed array
-- do not manually duplicate data in multiple files
+**Do not duplicate market data** across multiple files. Edit `backend/data/markets.ts` to add or update markets, then re-run the seed script.
+
+```bash
+DATABASE_URL=$(grep '^DATABASE_URL=' .env.local | cut -d'=' -f2-) npx tsx prisma/seed.ts
+```
 
 ---
 
@@ -963,38 +978,35 @@ Claude should produce:
 - typed domain helpers
 - no dead code or placeholder frameworks not used by MVP
 
-## 23.1 Suggested Project Structure
+## 23.1 Actual Project Structure (post-backend build)
 
 ```text
-/app
-  /(marketing)/page.tsx
-  /market/[slug]/page.tsx
-  /watchlist/page.tsx
-  /api/search/route.ts
-  /api/watchlist/route.ts
-  /api/watchlist/[marketId]/route.ts
-  /api/telemetry/route.ts
-/components
-  SearchBar.tsx
-  ComplianceSummaryCard.tsx
-  RuleCard.tsx
-  SourceList.tsx
-  FreshnessBadge.tsx
-  WatchlistButton.tsx
-/lib
-  auth.ts
-  db.ts
-  market-search.ts
-  telemetry.ts
-  validations.ts
-  formatters.ts
-/prisma
-  schema.prisma
-  seed.ts
-/data
-  markets.ts
-/types
-  market.ts
+/Capstone/
+  /backend/
+    /data/
+      markets.ts             ← canonical typed seed data; edit here to add/update markets
+  /frontend/
+    prisma.config.ts         ← Prisma 7 DB config (adapter + migrate settings)
+    /prisma/
+      schema.prisma          ← 7 DB tables (see section 12.2)
+      seed.ts                ← imports from backend/data/markets.ts and seeds DB
+      /migrations/           ← committed migration history
+    /lib/
+      db.ts                  ← Prisma client singleton (server-only)
+      session.ts             ← auth placeholder — returns null → 401; replace body when NextAuth added
+    /app/
+      /api/
+        /search/
+          route.ts           ← GET /api/search
+        /markets/
+          /[slug]/
+            route.ts         ← GET /api/markets/:slug
+        /telemetry/
+          route.ts           ← POST /api/telemetry
+        /watchlist/
+          route.ts           ← GET + POST /api/watchlist
+          /[marketSlug]/
+            route.ts         ← DELETE /api/watchlist/:marketSlug
 ```
 
 ---
@@ -1043,16 +1055,18 @@ Claude should implement the product with the following interpretation:
 
 ## 27. Suggested Implementation Order
 
-1. Initialize app, database, Prisma, auth, Tailwind
-2. Create schema and migrations
-3. Add typed market seed data
-4. Implement search normalization and matching
-5. Build home page search
-6. Build market result page
-7. Build source links and freshness badges
-8. Add watchlist APIs and UI
-9. Add telemetry
-10. Add tests and README polish
+1. ~~Initialize app, database, Prisma, auth, Tailwind~~ ✅
+2. ~~Create schema and migrations~~ ✅
+3. ~~Add typed market seed data~~ ✅ (5 LA-area markets seeded)
+4. ~~Implement search normalization and matching~~ ✅
+5. ~~Build home page search~~ ✅
+6. ~~Build market result page~~ ✅
+7. ~~Build source links and freshness badges~~ ✅
+8. ~~Add watchlist APIs~~ ✅ (routes built; return 401 until auth wired)
+9. ~~Add telemetry~~ ✅
+10. **Wire auth** — NextAuth magic link + Resend; update `frontend/lib/session.ts` ← **current step**
+11. Watchlist UX — once auth works, all 3 watchlist routes activate automatically
+12. Add tests and README polish
 
 ---
 
@@ -1119,18 +1133,18 @@ export const markets = [
 
 ## 30. Appendix B — Definition of Done Checklist
 
-- [ ] Next.js app created
-- [ ] TypeScript enabled
-- [ ] Prisma schema complete (including `jurisdictionLevel String?` on `MarketRule`)
-- [ ] PostgreSQL connected
-- [ ] Seed script works
-- [ ] Search flow works
-- [ ] Supported result page complete
-- [ ] Unsupported state complete
-- [ ] Watchlist complete
-- [ ] Telemetry logging complete
-- [ ] Auth enforced for watchlist
+- [x] Next.js app created
+- [x] TypeScript enabled
+- [x] Prisma schema complete (including `jurisdictionLevel String?` on `MarketRule`)
+- [x] PostgreSQL connected (Neon)
+- [x] Seed script works
+- [x] Search flow works
+- [x] Supported result page complete
+- [x] Unsupported state complete
+- [ ] Watchlist complete ← blocked on auth
+- [x] Telemetry logging complete
+- [ ] Auth enforced for watchlist ← **next step: wire NextAuth + Resend**
 - [ ] Basic tests added
 - [ ] README added
-- [ ] `.env.example` added
-- [ ] No runtime AI dependency in core flow
+- [x] `.env.example` added
+- [x] No runtime AI dependency in core flow

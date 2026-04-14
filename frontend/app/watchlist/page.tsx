@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useAuth } from '@/lib/auth'
 import { useWatchlist } from '@/lib/watchlist'
-import { getMarketBySlug } from '@/lib/search'
 import StatusBadge from '@/components/StatusBadge'
 import FreshnessBadge from '@/components/FreshnessBadge'
 import { formatPermitRequired, formatOwnerOccupancy, formatLastReviewed } from '@/lib/formatters'
+import type { StrStatus, PermitRequired, OwnerOccupancy, FreshnessStatus } from '@/types/market'
 
 export default function WatchlistPage() {
   const router = useRouter()
@@ -33,13 +33,6 @@ export default function WatchlistPage() {
 
   if (!isSignedIn) return null
 
-  const savedMarkets = entries
-    .map((entry) => {
-      const market = getMarketBySlug(entry.slug)
-      return market ? { market, savedAt: entry.savedAt } : null
-    })
-    .filter((item): item is NonNullable<typeof item> => item !== null)
-
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
       {/* Header */}
@@ -47,7 +40,7 @@ export default function WatchlistPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-100">My Markets</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {savedMarkets.length} of 25 markets tracked
+            {entries.length} of 25 markets tracked
           </p>
         </div>
         <Link
@@ -59,7 +52,7 @@ export default function WatchlistPage() {
       </div>
 
       {/* Empty state */}
-      {savedMarkets.length === 0 && (
+      {entries.length === 0 && (
         <div className="rounded-xl border border-dashed border-gray-700 bg-gray-900 px-8 py-16 text-center">
           <p className="text-gray-400 text-base mb-1">No markets tracked yet.</p>
           <p className="text-sm text-gray-600 mb-6">
@@ -75,7 +68,7 @@ export default function WatchlistPage() {
       )}
 
       {/* Watchlist table */}
-      {savedMarkets.length > 0 && (
+      {entries.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900">
           <table className="w-full text-sm">
             <thead>
@@ -102,29 +95,31 @@ export default function WatchlistPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {savedMarkets.map(({ market, savedAt }) => (
-                <tr key={market.slug} className="hover:bg-gray-800/30 transition-colors">
+              {entries.map(({ marketSlug, savedAt, market }) => (
+                <tr key={marketSlug} className="hover:bg-gray-800/30 transition-colors">
                   <td className="px-5 py-4">
                     <Link
-                      href={`/market/${market.slug}`}
+                      href={`/market/${marketSlug}`}
                       className="font-semibold text-gray-200 hover:text-indigo-400 transition-colors"
                     >
                       {market.name}
                     </Link>
-                    <p className="text-xs text-gray-600 mt-0.5">{market.countyName}</p>
+                    {market.countyName && (
+                      <p className="text-xs text-gray-600 mt-0.5">{market.countyName}</p>
+                    )}
                   </td>
                   <td className="px-4 py-4">
-                    <StatusBadge status={market.strStatus} size="sm" />
+                    <StatusBadge status={market.strStatus as StrStatus} size="sm" />
                   </td>
                   <td className="px-4 py-4 text-gray-400 hidden md:table-cell">
-                    {formatPermitRequired(market.permitRequired)}
+                    {formatPermitRequired(market.permitRequired as PermitRequired)}
                   </td>
                   <td className="px-4 py-4 text-gray-400 hidden md:table-cell">
-                    {formatOwnerOccupancy(market.ownerOccupancyRequired)}
+                    {formatOwnerOccupancy(market.ownerOccupancyRequired as OwnerOccupancy)}
                   </td>
                   <td className="px-4 py-4 hidden lg:table-cell">
                     <FreshnessBadge
-                      status={market.freshnessStatus}
+                      status={market.freshnessStatus as FreshnessStatus}
                       lastReviewedAt={market.lastReviewedAt}
                     />
                   </td>
@@ -133,7 +128,7 @@ export default function WatchlistPage() {
                   </td>
                   <td className="px-4 py-4 text-right">
                     <button
-                      onClick={() => remove(market.slug)}
+                      onClick={() => remove(marketSlug)}
                       aria-label={`Remove ${market.name} from watchlist`}
                       className="text-xs text-gray-600 hover:text-red-400 transition-colors"
                     >

@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { resolveSearch } from '@/lib/search'
+import { resolveSearch, getMarketBySlug } from '@/lib/search'
 import { logEvent } from '@/lib/telemetry'
 import type { Market } from '@/types/market'
 
 interface Props {
-  // When provided, results are returned inline instead of navigating
+  // When provided, results are returned inline instead of navigating.
+  // The homepage uses this to display results on the same page.
   onSearch?: (market: Market | null, query: string) => void
   autoFocus?: boolean
   placeholder?: string
@@ -21,8 +22,9 @@ export default function SearchBar({
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  function handleSubmit(e: React.SyntheticEvent) {
+  async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault()
     const trimmed = query.trim()
 
@@ -32,20 +34,32 @@ export default function SearchBar({
     }
 
     setError('')
+    setIsLoading(true)
     logEvent('search_performed', { queryText: trimmed })
 
-    const result = resolveSearch(trimmed)
+    try {
+      const result = await resolveSearch(trimmed)
 
-    if (onSearch) {
-      // Inline mode — parent handles the result
-      onSearch(result, trimmed)
-    } else {
-      // Navigation mode — route to market or unsupported page
-      if (result) {
-        router.push(`/market/${result.slug}`)
+      if (result.type === 'supported') {
+        if (onSearch) {
+          // Inline mode: fetch full market data, then pass to parent
+          const market = await getMarketBySlug(result.market.slug)
+          onSearch(market, trimmed)
+        } else {
+          router.push(`/market/${result.market.slug}`)
+        }
       } else {
-        router.push(`/unsupported?q=${encodeURIComponent(trimmed)}`)
+        // Unsupported market
+        if (onSearch) {
+          onSearch(null, trimmed)
+        } else {
+          router.push(`/unsupported?q=${encodeURIComponent(trimmed)}`)
+        }
       }
+    } catch {
+      setError('Search is temporarily unavailable. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -84,16 +98,18 @@ export default function SearchBar({
           autoComplete="off"
           spellCheck={false}
           autoFocus={autoFocus}
-          className="flex-1 py-4 text-base text-gray-900 placeholder-gray-500 bg-transparent focus:outline-none"
+          disabled={isLoading}
+          className="flex-1 py-4 text-base text-gray-900 placeholder-gray-500 bg-transparent focus:outline-none disabled:opacity-60"
         />
 
         <div className="pr-2 flex-shrink-0">
           <button
             type="submit"
-            // Fix: bg-orange-700 achieves ~4.7:1 contrast with white text on small text (AA)
-            className="px-6 py-2.5 bg-orange-700 text-white text-sm font-semibold rounded-full hover:bg-orange-800 active:bg-orange-900 transition-colors whitespace-nowrap"
+            disabled={isLoading}
+            aria-busy={isLoading}
+            className="px-6 py-2.5 bg-orange-700 text-white text-sm font-semibold rounded-full hover:bg-orange-800 active:bg-orange-900 transition-colors whitespace-nowrap disabled:opacity-60"
           >
-            Look up
+            {isLoading ? 'Searching…' : 'Look up'}
           </button>
         </div>
       </div>

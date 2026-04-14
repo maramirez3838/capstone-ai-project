@@ -43,14 +43,35 @@
 
 ## Data and mock fixtures
 
-### [2026-04-12] `aliases` field is FE-only — do not add to the BE Market table
-**Rule:** The `aliases` field on the `Market` interface is used only for client-side search matching and is explicitly not part of the backend data model (see comment in `types/market.ts`). When BE builds the schema, do not add an `aliases` column to the Market table. If aliases are needed later, they belong in a separate lookup/join table.
+### [2026-04-13] Aliases rule updated — `MarketAlias` table IS in the DB schema (SRD v1.1)
+**Rule:** Aliases do NOT belong as a flat column on the `Market` table. They belong in a separate `MarketAlias` join table (one row per alias, indexed on `alias`). This is what the SRD v1.1 specifies and is required for server-side search matching on `GET /api/search`. The FE `Market` type still carries `aliases: string[]` for display/mock purposes, but the backend stores them normalized in `MarketAlias`. The earlier rule ("aliases FE-only, never in DB") was written before the SRD finalized the search architecture and is now superseded.
 
 ---
 
 ## Search and routing
 
 *(No rules logged yet.)*
+
+---
+
+## Backend and database
+
+### [2026-04-14] Prisma 7 removed `url` from schema.prisma datasource block
+**Rule:** In Prisma 7, do NOT put `url = env("DATABASE_URL")` in `schema.prisma`. Connection config lives in `prisma.config.ts` (at the project root, next to `package.json`) using `defineConfig` with `datasource.url` and a `migrate.adapter`. Always use `@prisma/adapter-pg` + `pg` for PostgreSQL connections.
+
+### [2026-04-14] Prisma 7 CLI does not auto-load `.env.local`
+**Rule:** The Prisma CLI reads `.env` by default, not `.env.local` (which is a Next.js convention). When running `prisma migrate dev` or `npx tsx prisma/seed.ts`, always prefix with the env var:
+```bash
+DATABASE_URL=$(grep '^DATABASE_URL=' .env.local | cut -d'=' -f2-) npx prisma migrate dev --name <name>
+DATABASE_URL=$(grep '^DATABASE_URL=' .env.local | cut -d'=' -f2-) npx tsx prisma/seed.ts
+```
+The dev server (`npm run dev`) reads `.env.local` automatically, so API routes work without this prefix.
+
+### [2026-04-14] Prisma 7 seed command moved from package.json to prisma.config.ts
+**Rule:** In Prisma 6, the seed command was `"prisma": { "seed": "tsx prisma/seed.ts" }` in `package.json`. In Prisma 7, `npx prisma db seed` reads from `prisma.config.ts`. Run the seed script directly instead: `npx tsx prisma/seed.ts` (with DATABASE_URL prefixed as above).
+
+### [2026-04-14] Zod v4 renamed `.errors` to `.issues` on ZodError
+**Rule:** In Zod v4, `parseResult.error.errors` does not exist. Use `parseResult.error.issues` instead. Also, `z.record()` now requires two arguments: `z.record(z.string(), z.unknown())` — the key schema is no longer optional.
 
 ---
 

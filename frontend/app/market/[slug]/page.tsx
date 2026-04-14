@@ -1,15 +1,21 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { getMarketBySlug, getAllMarkets } from '@/lib/search'
+import { db } from '@/lib/db'
 import ComplianceSummaryCard from '@/components/ComplianceSummaryCard'
 import RuleCard from '@/components/RuleCard'
 import SourceList from '@/components/SourceList'
 import FreshnessBadge from '@/components/FreshnessBadge'
 import WatchlistButton from '@/components/WatchlistButton'
 import Disclaimer from '@/components/Disclaimer'
+import type { Market } from '@/types/market'
 
-export function generateStaticParams() {
-  return getAllMarkets().map((m) => ({ slug: m.slug }))
+// Tell Next.js which slugs to pre-render at build time
+export async function generateStaticParams() {
+  const markets = await db.market.findMany({
+    where: { supportStatus: 'supported' },
+    select: { slug: true },
+  })
+  return markets.map((m: { slug: string }) => ({ slug: m.slug }))
 }
 
 export async function generateMetadata({
@@ -18,7 +24,10 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const market = getMarketBySlug(slug)
+  const market = await db.market.findUnique({
+    where: { slug },
+    select: { name: true, countyName: true, summary: true },
+  })
   if (!market) return {}
   return {
     title: `${market.name} STR Compliance — STR Comply`,
@@ -32,16 +41,52 @@ export default async function MarketPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const market = getMarketBySlug(slug)
 
-  if (!market) notFound()
+  const raw = await db.market.findUnique({
+    where: { slug },
+    include: {
+      rules: { orderBy: { displayOrder: 'asc' } },
+      sources: { orderBy: { displayOrder: 'asc' } },
+    },
+  })
 
-  const sortedRules = [...market.rules].sort(
-    (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
-  )
-  const sortedSources = [...market.sources].sort(
-    (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
-  )
+  if (!raw || raw.supportStatus === 'archived') notFound()
+
+  // Map DB record to the Market type the components expect
+  const market: Market = {
+    id: raw.id,
+    slug: raw.slug,
+    name: raw.name,
+    stateCode: raw.stateCode,
+    countyName: raw.countyName ?? '',
+    regionLabel: raw.regionLabel ?? undefined,
+    strStatus: raw.strStatus as Market['strStatus'],
+    permitRequired: raw.permitRequired as Market['permitRequired'],
+    ownerOccupancyRequired: raw.ownerOccupancyRequired as Market['ownerOccupancyRequired'],
+    freshnessStatus: raw.freshnessStatus as Market['freshnessStatus'],
+    summary: raw.summary,
+    notableRestrictions: raw.notableRestrictions ?? undefined,
+    lastReviewedAt: raw.lastReviewedAt.toISOString(),
+    aliases: [], // FE-only field; not stored on BE Market
+    rules: raw.rules.map((r) => ({
+      ruleKey: r.ruleKey,
+      label: r.label,
+      value: r.value,
+      details: r.details ?? undefined,
+      codeRef: r.codeRef ?? undefined,
+      codeUrl: r.codeUrl ?? undefined,
+      displayOrder: r.displayOrder,
+      jurisdictionLevel: r.jurisdictionLevel as Market['rules'][number]['jurisdictionLevel'],
+    })),
+    sources: raw.sources.map((s) => ({
+      id: s.id,
+      title: s.title,
+      url: s.url,
+      sourceType: s.sourceType as Market['sources'][number]['sourceType'],
+      publisher: s.publisher ?? undefined,
+      displayOrder: s.displayOrder,
+    })),
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
@@ -77,16 +122,16 @@ export default async function MarketPage({
       <ComplianceSummaryCard market={market} />
 
       {/* Rule breakdown */}
-      {sortedRules.length > 0 && (
+      {market.rules.length > 0 && (
         <div className="mt-10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold text-gray-900">Rule Breakdown</h2>
             <span className="text-xs text-gray-400">
-              {sortedRules.length} rule{sortedRules.length !== 1 ? 's' : ''} · source-linked
+              {market.rules.length} rule{market.rules.length !== 1 ? 's' : ''} · source-linked
             </span>
           </div>
           <div className="divide-y divide-gray-100 rounded-2xl border border-gray-100 overflow-hidden">
-            {sortedRules.map((rule) => (
+            {market.rules.map((rule) => (
               <RuleCard key={rule.ruleKey} rule={rule} lastReviewedAt={market.lastReviewedAt} />
             ))}
           </div>
@@ -98,7 +143,7 @@ export default async function MarketPage({
         <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
           Source Documents
         </h2>
-        <SourceList sources={sortedSources} marketSlug={market.slug} />
+        <SourceList sources={market.sources} marketSlug={market.slug} />
       </div>
 
       {/* Freshness */}

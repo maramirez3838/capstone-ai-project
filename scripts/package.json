@@ -1,0 +1,18 @@
+{
+  "name": "str-comply-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Internal tooling scripts for STR Comply — market intake assistant and utilities.",
+  "scripts": {
+    "intake": "tsx intake-market.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}

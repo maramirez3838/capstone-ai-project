@@ -12,10 +12,10 @@ update this table before anything else.
 
 | Artifact | Current File | Version | Notes |
 | :--- | :--- | :--- | :--- |
-| PRD | `Reference Artifacts/PH-1_  PRD STR_Comply_PRD_v2.0_MR.docx.md` | v2.1 | Capstone revision, MVP scope narrowed |
-| SRD | `Reference Artifacts/STR_Comply_SRD_v1.1.md` | v1.1 | Added `jurisdictionLevel` to `MarketRule` schema and enumeration |
-| ICP | `Reference Artifacts/ICP_One_Pager.md` | v1.0 | Ideal client profile and Marcus Chen persona |
-| Accessibility Spec | `Reference Artifacts/STR_Comply_Accessibility_Spec_v1.0.md` | v1.0 | WCAG 2.1 AA implementation spec; component-level criteria and dev checklist |
+| PRD | `Reference Artifacts/STR_Comply_PRD_v2.1.md` | v2.1 | Capstone revision, MVP scope narrowed |
+| SRD | `Reference Artifacts/STR_Comply_SRD_v1.2.md` | v1.2 | Backend wired; confirmed stack (Prisma 7/adapter-pg, Neon, Zod, tsx); fixed DELETE route to use marketSlug; updated project structure and DoD checklist |
+| ICP | `Reference Artifacts/STR_Comply_ICP_v1.0.md` | v1.0 | Ideal client profile and Marcus Chen persona |
+| Accessibility Spec | `Reference Artifacts/STR_Comply_AccessibilitySpec_v1.0.md` | v1.0 | WCAG 2.1 AA implementation spec; component-level criteria and dev checklist |
 
 New versions are only created when scope changes. Until then, the files above are the source of truth.
 
@@ -67,36 +67,40 @@ See @docs/lessons.md for rules learned during this build.
 
 ## Team and build context
 
-- PM / FE lead: building UI locally, will push to GitHub for team collaboration
+- PM / FE lead: building UI and backend locally
 - Group partners: collaborating via GitHub
-- BE engineer: joining later to implement database, API routes, and auth
-- Current phase: UI-first — frontend is built before backend is wired
+- Current phase: **Backend wired — auth is next**
 
-**How to handle the UI-first phase:**
-- Build all frontend in `/frontend` as a standalone folder
-- Use static mock data (typed local fixtures) to simulate real API responses
-- Stub API shapes as TypeScript interfaces in `/frontend/src/types/` so the BE
-  engineer knows exactly what each endpoint must return
-- Do NOT make real API calls or connect to a database during this phase
-- When a component needs data, import it from `/frontend/src/mocks/` — never
-  hardcode data directly inside components
+**Phase summary:**
+- UI-first phase: complete. Frontend components, pages, and mock data are done.
+- Backend phase: complete. Prisma 7 + Neon DB wired, all API routes live, 5 LA-area markets seeded.
+- Auth phase: in progress. NextAuth magic link with Resend is the chosen approach.
+  Only `frontend/lib/session.ts` needs to change — all 3 watchlist routes will activate automatically once `requireSession()` returns a real session.
+
+**Key CLI commands (Prisma 7 requires manual DATABASE_URL prefix):**
+```bash
+# Run a migration
+DATABASE_URL=$(grep '^DATABASE_URL=' .env.local | cut -d'=' -f2-) npx prisma migrate dev --name <name>
+
+# Re-seed the database
+DATABASE_URL=$(grep '^DATABASE_URL=' .env.local | cut -d'=' -f2-) npx tsx prisma/seed.ts
+
+# Start dev server (reads .env.local automatically)
+npm run dev
+```
 
 ---
 
 ## Approved tech stack
 
-**Frontend (current phase):**
 - Next.js (App Router) — TypeScript
-- Tailwind CSS for styling
-- No component libraries beyond Tailwind utility classes
-- Static mock data from typed fixture files
-
-**Full stack (when BE joins):**
-- Next.js (App Router) — single codebase, frontend + API routes
-- PostgreSQL + Prisma ORM
-- NextAuth / Auth.js — email magic link or credentials
-- Tailwind CSS
-- Vercel (app hosting) + Neon or Supabase (database)
+- Tailwind CSS — no component libraries beyond utility classes
+- Prisma 7 + `@prisma/adapter-pg` + `pg` — ORM and DB connection
+- Zod — input validation on all API route handlers
+- `tsx` — seed script runtime
+- PostgreSQL via **Neon** (confirmed host)
+- NextAuth / Auth.js — email magic link; **Resend** is the chosen email provider
+- Vercel — app hosting target
 - Telemetry events logged to Postgres
 
 **NEVER introduce without asking:**
@@ -114,20 +118,29 @@ See @docs/lessons.md for rules learned during this build.
 ## Project structure
 
 ```
-/frontend              ← standalone FE (current phase)
-  /src
-    /app               ← Next.js App Router pages
-    /components        ← reusable UI components
-    /mocks             ← typed static fixture data (replaces API during UI phase)
-    /types             ← shared TypeScript interfaces (API contract stubs)
-    /lib               ← utility functions, formatters, helpers
+/Capstone/
+  /backend/
+    /data/
+      markets.ts             ← canonical typed seed data; edit here to add/update markets
+  /frontend/
+    prisma.config.ts         ← Prisma 7 DB config (adapter + migrate settings)
+    /prisma/
+      schema.prisma          ← 7 DB tables
+      seed.ts                ← imports from backend/data/markets.ts and seeds DB
+      /migrations/           ← committed migration history
+    /lib/
+      db.ts                  ← Prisma client singleton (server-only)
+      session.ts             ← auth placeholder — returns null → 401; replace when NextAuth added
+    /app/
+      /api/
+        /search/route.ts
+        /markets/[slug]/route.ts
+        /telemetry/route.ts
+        /watchlist/route.ts           ← GET + POST
+        /watchlist/[marketSlug]/route.ts  ← DELETE
 /docs
-  lessons.md           ← error log and learned rules (see instructions below)
-  be-handoff.md        ← API contract and schema reference for BE engineer
+  lessons.md             ← error log and learned rules
 ```
-
-When BE joins, the full stack structure from the SRD applies:
-`/app`, `/components`, `/lib`, `/prisma`, `/data`, `/types`
 
 ---
 

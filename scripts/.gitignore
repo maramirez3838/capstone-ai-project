@@ -1,0 +1,6 @@
+node_modules/
+dist/
+
+# Draft outputs — working files, not committed.
+# After review, paste approved objects into backend/data/markets.ts.
+drafts/
