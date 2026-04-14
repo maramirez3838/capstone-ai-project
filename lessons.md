@@ -24,7 +24,16 @@
 
 ## UI and components
 
-### [2026-04-12] localStorage reads cause SSR hydration mismatches without a mounted guard
+### [2026-04-13] Color-only status indicators fail WCAG AA for color-blind users
+**Rule:** Every status badge (STR eligibility, rule value, freshness) must use a shape icon in addition to color. A colored dot alone is not sufficient — ~8% of male users have red-green color deficiency and cannot distinguish green from amber or red. Use checkmark (✓), warning triangle (⚠), and X circle (✕) SVG icons. Icons must be `aria-hidden="true" focusable="false"` since the text label carries the semantic meaning.
+
+### [2026-04-13] `outline-none` on inputs must always be paired with a visible focus replacement
+**Rule:** Never write `outline-none` or `focus:outline-none` on an interactive element without providing an equivalent visible focus indicator. For grouped inputs (e.g. icon + input + button inside a container div), apply `focus-within:ring-2 focus-within:border-{color}` to the container so keyboard focus is always visible. Sighted keyboard users are blocked entirely if no focus ring exists.
+
+### [2026-04-13] `placeholder-gray-400` fails WCAG AA contrast (2.9:1 — minimum is 4.5:1)
+**Rule:** Always use `placeholder-gray-500` (4.6:1 on white) or darker for placeholder text. `gray-400` (#9ca3af) on white fails AA for both normal and large text. This applies to all text inputs across the product.
+
+### [2026-04-13] localStorage reads cause SSR hydration mismatches without a mounted guard
 **Rule:** Any hook that reads `localStorage` must initialize with `mounted: false` and only read inside a `useEffect`. Components must render a loading skeleton (not `null`) until `mounted` is `true`. This prevents Next.js hydration errors where server-rendered HTML doesn't match the client state. See `lib/auth.ts` and `lib/watchlist.ts` for the correct pattern.
 
 ### [2026-04-12] `useSearchParams()` requires a `<Suspense>` boundary in App Router
@@ -47,6 +56,9 @@
 
 ## API shape and types
 
+### [2026-04-13] `jurisdictionLevel` on `MarketRule` must remain optional in the DB schema
+**Rule:** The `jurisdictionLevel` field (`city | county | state`) was added to `MarketRule` as optional (`String?` in Prisma). It must stay nullable in the database — not all rules will have a jurisdiction level, and adding a NOT NULL constraint would break existing seed data and any future markets where the level is unknown or genuinely mixed. The TypeScript type is `jurisdictionLevel?: 'city' | 'county' | 'state'`.
+
 ### [2026-04-12] `WatchlistEntry` has two different shapes — local hook vs. API contract
 **Rule:** `types/market.ts` defines `WatchlistEntry` with a `marketSlug` field (the future API contract). `lib/watchlist.ts` uses a separate local interface with a `slug` field. TypeScript will not catch the mismatch because they are separate types. When wiring the BE, update the watchlist hook to consume the API shape (`marketSlug`) and delete the local interface.
 
@@ -54,7 +66,8 @@
 
 ## Styling and layout
 
-*(No rules logged yet.)*
+### [2026-04-13] `text-orange-600` and `bg-orange-500` fail WCAG AA on small text
+**Rule:** Orange-600 (#ea580c) on white achieves only 3.4:1 contrast — below the 4.5:1 AA minimum for small text. Orange-500 (#f97316) with white text on a button achieves ~2.7:1 — also a failure. Always use `text-orange-700` (#c2410c, 4.7:1 ✓) for orange text links and labels, and `bg-orange-700` as the minimum for orange buttons with white text. Apply the same logic to any other accent color used at small sizes.
 
 ---
 

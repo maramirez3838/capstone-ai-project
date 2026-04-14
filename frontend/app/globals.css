@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    background-color: #030712; /* gray-950 */
-    color: #f1f5f9;            /* slate-100 */
+    background-color: #ffffff; /* white */
+    color: #111827;            /* gray-900 */
   }
 }

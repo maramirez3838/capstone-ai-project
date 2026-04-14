@@ -13,7 +13,9 @@ update this table before anything else.
 | Artifact | Current File | Version | Notes |
 | :--- | :--- | :--- | :--- |
 | PRD | `Reference Artifacts/PH-1_  PRD STR_Comply_PRD_v2.0_MR.docx.md` | v2.1 | Capstone revision, MVP scope narrowed |
-| SRD | `Reference Artifacts/STR_Comply_SRD_v1.md` | v1.0 | Derived from PRD v2.1 |
+| SRD | `Reference Artifacts/STR_Comply_SRD_v1.1.md` | v1.1 | Added `jurisdictionLevel` to `MarketRule` schema and enumeration |
+| ICP | `Reference Artifacts/ICP_One_Pager.md` | v1.0 | Ideal client profile and Marcus Chen persona |
+| Accessibility Spec | `Reference Artifacts/STR_Comply_Accessibility_Spec_v1.0.md` | v1.0 | WCAG 2.1 AA implementation spec; component-level criteria and dev checklist |
 
 New versions are only created when scope changes. Until then, the files above are the source of truth.
 

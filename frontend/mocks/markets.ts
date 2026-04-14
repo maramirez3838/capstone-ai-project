@@ -25,10 +25,13 @@ export const markets: Market[] = [
     rules: [
       {
         ruleKey: 'str_status',
-        label: 'STR Status',
+        label: 'STR Eligibility',
         value: 'Conditional',
         details: 'Allowed only under the Home-Sharing Program for primary residences.',
         displayOrder: 1,
+        codeRef: 'SMMC § 6.20.010',
+        codeUrl: 'https://www.smgov.net/departments/cdd/content.aspx?id=61520',
+        jurisdictionLevel: 'city',
       },
       {
         ruleKey: 'permit_required',
@@ -36,6 +39,9 @@ export const markets: Market[] = [
         value: 'Required',
         details: 'City registration and business license required before listing.',
         displayOrder: 2,
+        codeRef: 'SMMC § 6.20.030',
+        codeUrl: 'https://www.smgov.net/departments/cdd/content.aspx?id=61520',
+        jurisdictionLevel: 'city',
       },
       {
         ruleKey: 'owner_occupancy',
@@ -43,6 +49,8 @@ export const markets: Market[] = [
         value: 'Required',
         details: 'Host must occupy the property as their primary residence.',
         displayOrder: 3,
+        codeRef: 'SMMC § 6.20.020',
+        jurisdictionLevel: 'city',
       },
       {
         ruleKey: 'nightly_cap',
@@ -50,6 +58,8 @@ export const markets: Market[] = [
         value: '30 nights/year (unhosted)',
         details: 'Unhosted rentals limited to 30 nights per calendar year. No cap for hosted stays.',
         displayOrder: 4,
+        codeRef: 'SMMC § 6.20.050',
+        jurisdictionLevel: 'city',
       },
     ],
     sources: [
@@ -91,10 +101,13 @@ export const markets: Market[] = [
     rules: [
       {
         ruleKey: 'str_status',
-        label: 'STR Status',
+        label: 'STR Eligibility',
         value: 'Conditional',
         details: 'Permitted under the Home-Sharing Ordinance (Ordinance No. 185,931) for primary residences only.',
         displayOrder: 1,
+        codeRef: 'LAMC § 12.22 A.33',
+        codeUrl: 'https://planning.lacity.gov/development-services/short-term-rentals',
+        jurisdictionLevel: 'city',
       },
       {
         ruleKey: 'permit_required',
@@ -102,6 +115,9 @@ export const markets: Market[] = [
         value: 'Required',
         details: 'City Home-Sharing registration required. Annual renewal.',
         displayOrder: 2,
+        codeRef: 'Ordinance No. 185,931',
+        codeUrl: 'https://clkrep.lacity.org/onlinedocs/2014/14-1635-s2_ord_185931.pdf',
+        jurisdictionLevel: 'city',
       },
       {
         ruleKey: 'owner_occupancy',
@@ -109,6 +125,8 @@ export const markets: Market[] = [
         value: 'Required',
         details: 'Property must be the host\'s primary residence.',
         displayOrder: 3,
+        codeRef: 'LAMC § 12.22 A.33(f)',
+        jurisdictionLevel: 'city',
       },
       {
         ruleKey: 'nightly_cap',
@@ -116,6 +134,8 @@ export const markets: Market[] = [
         value: '120 nights/year (unhosted)',
         details: 'Unhosted stays capped at 120 nights per year. No cap for hosted stays.',
         displayOrder: 4,
+        codeRef: 'LAMC § 12.22 A.33(g)',
+        jurisdictionLevel: 'city',
       },
     ],
     sources: [
@@ -157,10 +177,13 @@ export const markets: Market[] = [
     rules: [
       {
         ruleKey: 'str_status',
-        label: 'STR Status',
+        label: 'STR Eligibility',
         value: 'Conditional',
         details: 'Permitted with active City STR program. Multi-unit building restrictions vary.',
         displayOrder: 1,
+        codeRef: 'WeHo Municipal Code § 19.24',
+        codeUrl: 'https://www.weho.org/city-government/city-departments/community-development/planning/short-term-rentals',
+        jurisdictionLevel: 'city',
       },
       {
         ruleKey: 'permit_required',
@@ -168,6 +191,8 @@ export const markets: Market[] = [
         value: 'Required',
         details: 'City STR permit required before listing on any platform.',
         displayOrder: 2,
+        codeRef: 'WeHo Municipal Code § 19.24.040',
+        jurisdictionLevel: 'city',
       },
       {
         ruleKey: 'owner_occupancy',
@@ -175,6 +200,7 @@ export const markets: Market[] = [
         value: 'Varies',
         details: 'Depends on property type and lease/HOA terms.',
         displayOrder: 3,
+        jurisdictionLevel: 'city',
       },
       {
         ruleKey: 'tot',
@@ -182,6 +208,8 @@ export const markets: Market[] = [
         value: 'Required',
         details: 'Hosts must collect and remit TOT to the City.',
         displayOrder: 4,
+        codeRef: 'WeHo Municipal Code § 3.28',
+        jurisdictionLevel: 'city',
       },
     ],
     sources: [
@@ -215,10 +243,13 @@ export const markets: Market[] = [
     rules: [
       {
         ruleKey: 'str_status',
-        label: 'STR Status',
+        label: 'STR Eligibility',
         value: 'Not Allowed',
         details: 'Residential STR use is generally not permitted under current zoning rules.',
         displayOrder: 1,
+        codeRef: 'Pasadena Zoning Code § 17.50.200',
+        codeUrl: 'https://ww5.cityofpasadena.net/planning/zoning-information/',
+        jurisdictionLevel: 'city',
       },
       {
         ruleKey: 'permit_required',
@@ -226,6 +257,7 @@ export const markets: Market[] = [
         value: 'No Permit Available',
         details: 'No city STR permit program in place for most residential properties.',
         displayOrder: 2,
+        jurisdictionLevel: 'city',
       },
       {
         ruleKey: 'investment_property',
@@ -233,6 +265,8 @@ export const markets: Market[] = [
         value: 'Not Eligible',
         details: 'Non-owner-occupied investment properties cannot be listed as STRs.',
         displayOrder: 3,
+        codeRef: 'Pasadena Zoning Code § 17.50.200(B)',
+        jurisdictionLevel: 'city',
       },
     ],
     sources: [
@@ -266,10 +300,12 @@ export const markets: Market[] = [
     rules: [
       {
         ruleKey: 'str_status',
-        label: 'STR Status',
+        label: 'STR Eligibility',
         value: 'Conditional',
         details: 'Permitted at the city level, subject to coastal and HOA constraints.',
         displayOrder: 1,
+        codeRef: 'Malibu Municipal Code § 17.68',
+        jurisdictionLevel: 'city',
       },
       {
         ruleKey: 'permit_required',
@@ -277,6 +313,9 @@ export const markets: Market[] = [
         value: 'Required',
         details: 'City business license and TOT registration required.',
         displayOrder: 2,
+        codeRef: 'Malibu Municipal Code § 5.04',
+        codeUrl: 'https://www.malibucity.org/248/Transient-Occupancy-Tax',
+        jurisdictionLevel: 'city',
       },
       {
         ruleKey: 'coastal_overlay',
@@ -284,6 +323,9 @@ export const markets: Market[] = [
         value: 'Applies',
         details: 'California Coastal Act requirements may impose additional restrictions for properties in coastal zones.',
         displayOrder: 3,
+        codeRef: 'Cal. Pub. Res. Code § 30210',
+        codeUrl: 'https://www.malibucity.org/199/Local-Coastal-Program',
+        jurisdictionLevel: 'state',
       },
       {
         ruleKey: 'owner_occupancy',
@@ -291,6 +333,7 @@ export const markets: Market[] = [
         value: 'Not Required (City Level)',
         details: 'No city-wide owner-occupancy requirement, but verify HOA and deed restrictions.',
         displayOrder: 4,
+        jurisdictionLevel: 'city',
       },
     ],
     sources: [

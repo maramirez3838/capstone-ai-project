@@ -45,31 +45,31 @@ export default function WatchlistPage() {
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">Your Watchlist</h1>
+          <h1 className="text-2xl font-bold text-gray-100">My Markets</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {savedMarkets.length} of 25 markets saved
+            {savedMarkets.length} of 25 markets tracked
           </p>
         </div>
         <Link
           href="/"
           className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
         >
-          + Add market
+          + Track a market
         </Link>
       </div>
 
       {/* Empty state */}
       {savedMarkets.length === 0 && (
         <div className="rounded-xl border border-dashed border-gray-700 bg-gray-900 px-8 py-16 text-center">
-          <p className="text-gray-400 text-base mb-1">No markets saved yet.</p>
+          <p className="text-gray-400 text-base mb-1">No markets tracked yet.</p>
           <p className="text-sm text-gray-600 mb-6">
-            Search for a market and click &quot;Save to Watchlist&quot; to track it here.
+            Search for a market and click &quot;Track this Market&quot; to add it to your pipeline.
           </p>
           <Link
             href="/"
             className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
           >
-            Search markets
+            Find a market
           </Link>
         </div>
       )}
@@ -84,7 +84,7 @@ export default function WatchlistPage() {
                   Market
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  STR Status
+                  STR Eligibility
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 hidden md:table-cell">
                   Permit
@@ -134,6 +134,7 @@ export default function WatchlistPage() {
                   <td className="px-4 py-4 text-right">
                     <button
                       onClick={() => remove(market.slug)}
+                      aria-label={`Remove ${market.name} from watchlist`}
                       className="text-xs text-gray-600 hover:text-red-400 transition-colors"
                     >
                       Remove

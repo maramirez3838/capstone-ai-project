@@ -8,12 +8,19 @@ import type {
 export function formatStrStatus(status: StrStatus): string {
   switch (status) {
     case 'allowed':
-      return 'Allowed'
+      return 'STR Eligible'
     case 'conditional':
-      return 'Conditional'
+      return 'STR Eligible with Restrictions'
     case 'not_allowed':
-      return 'Not Allowed'
+      return 'STR Not Eligible'
   }
+}
+
+export const strStatusTooltip: Record<StrStatus, string> = {
+  allowed: 'STRs are permitted in this market with minimal restrictions.',
+  conditional:
+    'STRs are permitted but subject to specific requirements — such as permits, owner-occupancy rules, or nightly caps. Review the rules below.',
+  not_allowed: 'STRs are generally prohibited in this market under current local regulations.',
 }
 
 export function formatPermitRequired(value: PermitRequired): string {
@@ -41,11 +48,11 @@ export function formatOwnerOccupancy(value: OwnerOccupancy): string {
 export function formatFreshnessStatus(status: FreshnessStatus): string {
   switch (status) {
     case 'fresh':
-      return 'Up to Date'
+      return 'Current'
     case 'review_due':
-      return 'Review Due'
+      return 'Review Recommended'
     case 'needs_review':
-      return 'Needs Review'
+      return 'Verify Before Acting'
   }
 }
 

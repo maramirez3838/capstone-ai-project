@@ -32,15 +32,16 @@ function UnsupportedContent() {
           )}
         </h1>
         <p className="text-gray-400 text-base max-w-md mx-auto leading-relaxed">
-          STR Comply currently covers a limited set of LA-area markets for the
-          MVP. We can&apos;t confidently map your search to a supported jurisdiction.
+          STR Comply currently covers a focused set of LA-area markets. We
+          can&apos;t confidently return a compliance summary for this jurisdiction —
+          don&apos;t rely on an unsupported result for underwriting.
         </p>
       </div>
 
       {/* Search again */}
       <div className="mb-12">
         <p className="text-sm font-medium text-gray-500 mb-3 text-center">
-          Try a supported market:
+          Browse covered markets:
         </p>
         <SearchBar />
       </div>

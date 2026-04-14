@@ -98,7 +98,7 @@ export default function LoginPage() {
         </Link>
         <h1 className="mt-4 text-xl font-semibold text-gray-100">Sign in</h1>
         <p className="mt-1.5 text-sm text-gray-500">
-          Sign in to save markets to your watchlist.
+          Sign in to track markets and manage your acquisition pipeline.
         </p>
       </div>
 

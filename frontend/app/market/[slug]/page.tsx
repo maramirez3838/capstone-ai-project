@@ -48,7 +48,7 @@ export default async function MarketPage({
       {/* Back */}
       <Link
         href="/"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-indigo-400 transition-colors mb-8"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-900 transition-colors mb-8"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -63,59 +63,62 @@ export default async function MarketPage({
         Back to search
       </Link>
 
-      {/* 1. Market header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-100 tracking-tight">{market.name}</h1>
-        <p className="text-gray-500 mt-1.5 text-sm">
+      {/* Market header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{market.name}</h1>
+        <p className="text-gray-500 mt-1 text-sm">
           {market.countyName}
           {market.regionLabel && <span> · {market.regionLabel}</span>}
           {' '}· {market.stateCode}
         </p>
       </div>
 
-      {/* 2. Compliance summary card */}
+      {/* Compliance summary */}
       <ComplianceSummaryCard market={market} />
 
-      {/* 3. Key rule cards */}
+      {/* Rule breakdown */}
       {sortedRules.length > 0 && (
         <div className="mt-10">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-4">
-            Key Rules
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-gray-900">Rule Breakdown</h2>
+            <span className="text-xs text-gray-400">
+              {sortedRules.length} rule{sortedRules.length !== 1 ? 's' : ''} · source-linked
+            </span>
+          </div>
+          <div className="divide-y divide-gray-100 rounded-2xl border border-gray-100 overflow-hidden">
             {sortedRules.map((rule) => (
-              <RuleCard key={rule.ruleKey} rule={rule} />
+              <RuleCard key={rule.ruleKey} rule={rule} lastReviewedAt={market.lastReviewedAt} />
             ))}
           </div>
         </div>
       )}
 
-      {/* 4. Source links */}
+      {/* Source documents */}
       <div className="mt-10">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-4">
-          Official Sources
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
+          Source Documents
         </h2>
         <SourceList sources={sortedSources} marketSlug={market.slug} />
       </div>
 
-      {/* 5. Freshness / last reviewed */}
-      <div className="mt-8">
+      {/* Freshness */}
+      <div className="mt-6">
         <FreshnessBadge status={market.freshnessStatus} lastReviewedAt={market.lastReviewedAt} />
         {market.freshnessStatus === 'needs_review' && (
-          <p className="mt-2 text-sm text-orange-400 bg-orange-950/40 border border-orange-900 rounded-lg px-4 py-2">
-            This market is overdue for review. Verify current rules directly
-            with the official sources above before relying on this summary.
+          <p className="mt-3 text-sm text-orange-700 bg-orange-50 border border-orange-100 rounded-xl px-4 py-3">
+            This summary is overdue for verification. Do not rely on it for active
+            underwriting — check the source documents above before making any decisions.
           </p>
         )}
       </div>
 
-      {/* 6. Watchlist action */}
-      <div className="mt-8">
+      {/* Watchlist */}
+      <div className="mt-6">
         <WatchlistButton marketSlug={market.slug} marketName={market.name} />
       </div>
 
-      {/* 7. Disclaimer */}
-      <div className="mt-10 pt-8 border-t border-gray-800">
+      {/* Disclaimer */}
+      <div className="mt-10 pt-8 border-t border-gray-100">
         <Disclaimer />
       </div>
     </div>

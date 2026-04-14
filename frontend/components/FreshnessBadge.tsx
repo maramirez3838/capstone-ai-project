@@ -7,9 +7,9 @@ interface Props {
 }
 
 const styles: Record<FreshnessStatus, string> = {
-  fresh: 'bg-green-950/60 text-green-400 border border-green-800',
-  review_due: 'bg-yellow-950/60 text-yellow-400 border border-yellow-800',
-  needs_review: 'bg-orange-950/60 text-orange-400 border border-orange-800',
+  fresh: 'bg-green-50 text-green-700 border border-green-200',
+  review_due: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
+  needs_review: 'bg-orange-50 text-orange-700 border border-orange-200',
 }
 
 const icons: Record<FreshnessStatus, string> = {
@@ -27,7 +27,7 @@ export default function FreshnessBadge({ status, lastReviewedAt }: Props) {
       <span>
         <span className="font-medium">{formatFreshnessStatus(status)}</span>
         <span className="mx-1.5 opacity-40">·</span>
-        <span className="opacity-70">Last reviewed {formatLastReviewed(lastReviewedAt)}</span>
+        <span className="opacity-70">Last verified {formatLastReviewed(lastReviewedAt)}</span>
       </span>
     </div>
   )

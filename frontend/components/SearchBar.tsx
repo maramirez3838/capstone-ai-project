@@ -1,21 +1,33 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { resolveSearch } from '@/lib/search'
 import { logEvent } from '@/lib/telemetry'
+import type { Market } from '@/types/market'
 
-export default function SearchBar() {
+interface Props {
+  // When provided, results are returned inline instead of navigating
+  onSearch?: (market: Market | null, query: string) => void
+  autoFocus?: boolean
+  placeholder?: string
+}
+
+export default function SearchBar({
+  onSearch,
+  autoFocus = false,
+  placeholder = 'Enter an address or city — try "Santa Monica" or "123 Main St, LA"',
+}: Props) {
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
 
-  function handleSubmit(e: FormEvent) {
+  function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault()
     const trimmed = query.trim()
 
     if (!trimmed) {
-      setError('Enter a market name to search.')
+      setError('Enter a city, market, or property address.')
       return
     }
 
@@ -24,35 +36,82 @@ export default function SearchBar() {
 
     const result = resolveSearch(trimmed)
 
-    if (result) {
-      router.push(`/market/${result.slug}`)
+    if (onSearch) {
+      // Inline mode — parent handles the result
+      onSearch(result, trimmed)
     } else {
-      router.push(`/unsupported?q=${encodeURIComponent(trimmed)}`)
+      // Navigation mode — route to market or unsupported page
+      if (result) {
+        router.push(`/market/${result.slug}`)
+      } else {
+        router.push(`/unsupported?q=${encodeURIComponent(trimmed)}`)
+      }
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full">
-      <div className="flex gap-0 rounded-xl overflow-hidden border border-gray-700 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-900/50 transition-all">
+    <form
+      onSubmit={handleSubmit}
+      role="search"
+      aria-label="Market compliance lookup"
+      className="w-full"
+    >
+      {/* Visually hidden label — placeholder alone is not sufficient for screen readers */}
+      <label htmlFor="market-search" className="sr-only">
+        Enter a city, market, or property address
+      </label>
+
+      <div className="flex items-center rounded-full border border-gray-200 shadow-md focus-within:shadow-lg focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100 transition-all bg-white overflow-hidden">
+        {/* Search icon — decorative, label carries the meaning */}
+        <div className="pl-5 pr-3 flex-shrink-0 text-gray-400" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          </svg>
+        </div>
+
         <input
-          type="text"
+          id="market-search"
+          type="search"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
             if (error) setError('')
           }}
-          placeholder="Search a market — try Santa Monica or West Hollywood"
-          className="flex-1 px-5 py-3.5 text-base text-gray-100 placeholder-gray-500 bg-gray-900 outline-none"
-          autoFocus
+          placeholder={placeholder}
+          aria-describedby="search-hint search-error"
+          aria-invalid={error ? 'true' : 'false'}
+          aria-required="true"
+          autoComplete="off"
+          spellCheck={false}
+          autoFocus={autoFocus}
+          className="flex-1 py-4 text-base text-gray-900 placeholder-gray-500 bg-transparent focus:outline-none"
         />
-        <button
-          type="submit"
-          className="px-6 py-3.5 bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 active:bg-indigo-700 transition-colors whitespace-nowrap"
-        >
-          Search
-        </button>
+
+        <div className="pr-2 flex-shrink-0">
+          <button
+            type="submit"
+            // Fix: bg-orange-700 achieves ~4.7:1 contrast with white text on small text (AA)
+            className="px-6 py-2.5 bg-orange-700 text-white text-sm font-semibold rounded-full hover:bg-orange-800 active:bg-orange-900 transition-colors whitespace-nowrap"
+          >
+            Look up
+          </button>
+        </div>
       </div>
-      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+
+      {/* Hint text — always in DOM, referenced by aria-describedby */}
+      <p id="search-hint" className="mt-4 text-sm text-gray-400 pl-1">
+        Try a city name, market, or full property address — e.g. &ldquo;Santa Monica&rdquo; or &ldquo;123 Main St, Los Angeles&rdquo;
+      </p>
+
+      {/* Error — always in DOM, empty when no error; role="alert" announces immediately */}
+      <p
+        id="search-error"
+        role="alert"
+        aria-live="assertive"
+        className="mt-3 text-sm text-red-500 pl-5"
+      >
+        {error}
+      </p>
     </form>
   )
 }
