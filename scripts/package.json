@@ -2,6 +2,7 @@
   "name": "str-comply-scripts",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Internal tooling scripts for STR Comply — market intake assistant and utilities.",
   "scripts": {
     "intake": "tsx intake-market.ts"

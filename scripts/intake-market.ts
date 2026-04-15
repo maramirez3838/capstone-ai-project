@@ -19,10 +19,14 @@
 import Anthropic from '@anthropic-ai/sdk'
 import * as fs from 'fs'
 import * as path from 'path'
+import { fileURLToPath } from 'url'
 import * as dotenv from 'dotenv'
 
+// ESM-compatible __dirname (Node 20 does not expose import.meta.dirname)
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
 // Load .env from the scripts/ directory if present (never commit .env)
-dotenv.config({ path: path.join(import.meta.dirname, '.env') })
+dotenv.config({ path: path.join(__dirname, '.env') })
 
 // ---------------------------------------------------------------------------
 // Types
@@ -314,8 +318,9 @@ Today's date for lastReviewedAt: ${new Date().toISOString().split('T')[0]}T00:00
     const stream = await client.messages.stream({
       model: 'claude-opus-4-6',
       max_tokens: 8000,
-      thinking: { type: 'adaptive' },
-      output_config: { effort: 'high' },
+      // 'adaptive' is newer than the installed SDK type definitions which
+      // only know 'enabled' | 'disabled'. Cast to bypass until types catch up.
+      thinking: { type: 'adaptive' } as unknown as Anthropic.Messages.ThinkingConfigParam,
       system: [
         {
           type: 'text',
@@ -430,7 +435,7 @@ async function main(): Promise<void> {
   }
 
   // Write draft file
-  const draftsDir = path.join(import.meta.dirname, 'drafts')
+  const draftsDir = path.join(__dirname, 'drafts')
   fs.mkdirSync(draftsDir, { recursive: true })
 
   const outPath = path.join(draftsDir, `${slug}.ts`)
