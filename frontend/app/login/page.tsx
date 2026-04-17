@@ -3,25 +3,27 @@
 import { useState, type FormEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { useAuth } from '@/lib/auth'
+import { signIn } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { Suspense } from 'react'
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const returnTo = searchParams.get('returnTo') ?? '/'
-  const { signIn, isSignedIn, mounted } = useAuth()
+  const { status } = useSession()
 
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
-  if (mounted && isSignedIn) {
+  // Already signed in — redirect immediately
+  if (status === 'authenticated') {
     router.replace(returnTo)
     return null
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     const trimmed = email.trim().toLowerCase()
 
@@ -31,19 +33,32 @@ function LoginForm() {
     }
 
     setError('')
-    signIn(trimmed)
     setSubmitted(true)
 
-    setTimeout(() => {
-      router.push(returnTo)
-    }, 800)
+    // Trigger Resend to send the magic link. Auth completes when the user
+    // clicks the link in their email — no redirect happens here.
+    await signIn('resend', { email: trimmed, callbackUrl: returnTo, redirect: false })
   }
 
   if (submitted) {
     return (
-      <div className="text-center py-4">
-        <div className="text-3xl mb-3">✓</div>
-        <p className="text-gray-300 font-medium">Signed in. Redirecting...</p>
+      <div className="text-center py-4 space-y-3">
+        <div className="text-3xl">✉</div>
+        <p className="text-gray-100 font-semibold">Check your email</p>
+        <p className="text-sm text-gray-400">
+          We sent a sign-in link to <span className="text-gray-200">{email}</span>.
+          Click it to continue.
+        </p>
+        <p className="text-xs text-gray-600 pt-2">
+          Didn&apos;t get it? Check your spam folder or{' '}
+          <button
+            onClick={() => { setSubmitted(false); setEmail('') }}
+            className="text-indigo-400 hover:text-indigo-300 underline"
+          >
+            try again
+          </button>
+          .
+        </p>
       </div>
     )
   }
@@ -76,12 +91,8 @@ function LoginForm() {
         type="submit"
         className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
       >
-        Continue
+        Send sign-in link
       </button>
-
-      <p className="text-center text-xs text-gray-600">
-        UI prototype — no real authentication. Any email will work.
-      </p>
     </form>
   )
 }

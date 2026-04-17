@@ -12,8 +12,8 @@ update this table before anything else.
 
 | Artifact | Current File | Version | Notes |
 | :--- | :--- | :--- | :--- |
-| PRD | `Reference Artifacts/STR_Comply_PRD_v2.1.md` | v2.1 | Capstone revision, MVP scope narrowed |
-| SRD | `Reference Artifacts/STR_Comply_SRD_v1.2.md` | v1.2 | Backend wired; confirmed stack (Prisma 7/adapter-pg, Neon, Zod, tsx); fixed DELETE route to use marketSlug; updated project structure and DoD checklist |
+| PRD | `Reference Artifacts/STR_Comply_PRD_v2.2.md` | v2.2 | Auth wired; compliance monitor agent built (off by default); RICE table and refresh model updated |
+| SRD | `Reference Artifacts/STR_Comply_SRD_v1.3.md` | v1.3 | Auth wired (NextAuth v5 + custom PrismaRawAdapter); compliance monitor agent documented (section 15A); NextAuth schema models added; MarketSource.contentHash added; project structure and DoD checklist updated |
 | ICP | `Reference Artifacts/STR_Comply_ICP_v1.0.md` | v1.0 | Ideal client profile and Marcus Chen persona |
 | Accessibility Spec | `Reference Artifacts/STR_Comply_AccessibilitySpec_v1.0.md` | v1.0 | WCAG 2.1 AA implementation spec; component-level criteria and dev checklist |
 

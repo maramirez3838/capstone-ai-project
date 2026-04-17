@@ -3,10 +3,12 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useWatchlist } from '@/lib/watchlist'
+import { useAuth } from '@/lib/auth'
 
 export default function Nav() {
   const pathname = usePathname()
   const { entries, mounted } = useWatchlist()
+  const { isSignedIn, email, signOut, mounted: authMounted } = useAuth()
 
   return (
     <nav className="sticky top-0 z-10 bg-white border-b border-gray-100">
@@ -54,6 +56,30 @@ export default function Nav() {
               </span>
             )}
           </Link>
+
+          {/* Auth */}
+          {authMounted && (
+            isSignedIn ? (
+              <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200">
+                <span className="text-xs text-gray-400 hidden sm:block truncate max-w-[140px]">
+                  {email}
+                </span>
+                <button
+                  onClick={() => signOut()}
+                  className="px-3 py-1.5 rounded-full text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                >
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="ml-2 px-4 py-1.5 rounded-full text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
+              >
+                Sign in
+              </Link>
+            )
+          )}
         </div>
       </div>
     </nav>

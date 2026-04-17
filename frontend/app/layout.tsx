@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { SessionProvider } from 'next-auth/react'
 import './globals.css'
 import Nav from '@/components/Nav'
 
@@ -19,8 +20,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} bg-white text-gray-900 antialiased`}>
-        <Nav />
-        <main>{children}</main>
+        <SessionProvider>
+          <Nav />
+          <main>{children}</main>
+        </SessionProvider>
       </body>
     </html>
   )

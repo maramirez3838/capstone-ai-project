@@ -1,37 +1,28 @@
 'use client'
 
-// Mock auth state for UI phase — backed by localStorage.
-// When BE joins, replace with NextAuth session hooks.
+// Real auth state backed by NextAuth v5 (Auth.js).
+// Keeps the same useAuth() interface so watchlist/page.tsx and Nav
+// don't need to change.
 
-import { useState, useEffect } from 'react'
-
-const AUTH_KEY = 'str_comply_auth'
-const EMAIL_KEY = 'str_comply_email'
+import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from 'next-auth/react'
 
 export function useAuth() {
-  const [isSignedIn, setIsSignedIn] = useState(false)
-  const [email, setEmail] = useState<string | null>(null)
-  const [mounted, setMounted] = useState(false)
+  const { data: session, status } = useSession()
 
-  // Read from localStorage after mount to avoid SSR hydration mismatch
-  useEffect(() => {
-    setMounted(true)
-    setIsSignedIn(localStorage.getItem(AUTH_KEY) === 'true')
-    setEmail(localStorage.getItem(EMAIL_KEY))
-  }, [])
+  // 'loading' means the session check is in flight — treat as not yet mounted
+  // to prevent SSR hydration mismatches (same pattern as the localStorage mock).
+  const mounted = status !== 'loading'
+  const isSignedIn = status === 'authenticated'
+  const email = session?.user?.email ?? null
 
   function signIn(emailInput: string) {
-    localStorage.setItem(AUTH_KEY, 'true')
-    localStorage.setItem(EMAIL_KEY, emailInput)
-    setIsSignedIn(true)
-    setEmail(emailInput)
+    // Sends the magic link via Resend. The page switches to "check your email"
+    // state after this call — the user completes auth by clicking the link.
+    nextAuthSignIn('resend', { email: emailInput })
   }
 
   function signOut() {
-    localStorage.removeItem(AUTH_KEY)
-    localStorage.removeItem(EMAIL_KEY)
-    setIsSignedIn(false)
-    setEmail(null)
+    nextAuthSignOut({ callbackUrl: '/' })
   }
 
   return { isSignedIn, email, signIn, signOut, mounted }

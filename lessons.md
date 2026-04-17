@@ -56,6 +56,18 @@
 
 ## Backend and database
 
+### [2026-04-17] `@auth/prisma-adapter` is incompatible with Prisma 7 + `@prisma/adapter-pg`
+**Rule:** When using Prisma 7 with a driver adapter (`@prisma/adapter-pg`), model property accessors like `prisma.verificationToken` return `undefined`. `@auth/prisma-adapter` calls these at runtime and throws `Cannot read properties of undefined (reading 'create')`. The fix is a custom adapter in `lib/auth-adapter.ts` that uses `db.$queryRaw` / `db.$executeRaw` exclusively. Never use `@auth/prisma-adapter` with Prisma 7 + driver adapter.
+
+### [2026-04-17] `channel_binding=require` in DATABASE_URL breaks the `pg` library
+**Rule:** Neon sometimes provides connection strings with `channel_binding=require`. The `pg` npm package does not support this parameter and throws `ECONNREFUSED`. Always strip `&channel_binding=require` from `DATABASE_URL`. `sslmode=require` alone is sufficient and correct.
+
+### [2026-04-17] `dotenv/config` does not load `.env.local` in `tsx` scripts
+**Rule:** `import 'dotenv/config'` only loads `.env` — not `.env.local` (a Next.js convention). Use `configDotenv({ path: resolve(process.cwd(), '.env.local') })` instead. The config call must happen before any module that reads `process.env` is loaded — use dynamic `import()` for those modules after the dotenv call, otherwise imports are hoisted before the env vars are set.
+
+### [2026-04-17] Neon pooler URL cannot be used for `prisma migrate dev`
+**Rule:** Neon's pooler hostname (e.g. `ep-xxx-pooler.c-6.us-east-1.aws.neon.tech`) does not accept direct TCP connections required by Prisma migrations. Use the non-pooler hostname (remove `-pooler` from the hostname) for `prisma migrate dev`. The pooler URL is correct for runtime app queries.
+
 ### [2026-04-14] Prisma 7 removed `url` from schema.prisma datasource block
 **Rule:** In Prisma 7, do NOT put `url = env("DATABASE_URL")` in `schema.prisma`. Connection config lives in `prisma.config.ts` (at the project root, next to `package.json`) using `defineConfig` with `datasource.url` and a `migrate.adapter`. Always use `@prisma/adapter-pg` + `pg` for PostgreSQL connections.
 
