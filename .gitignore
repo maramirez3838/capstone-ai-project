@@ -30,3 +30,6 @@ yarn-error.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# Source discovery output — working files, not committed
+frontend/scripts/discovery-output/

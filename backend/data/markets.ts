@@ -1,5 +1,10 @@
 // Canonical market seed data for STR Comply
 //
+// IMPORTANT: This file is the initial seed state.
+// Agent-applied changes in production are NOT automatically reflected here.
+// Before reseeding, run: npx tsx scripts/export-seed-state.ts > ../backend/data/markets.ts
+// Review the git diff carefully before reseeding from this file.
+//
 // This file is the single source of truth for market content.
 // It lives in /backend/data/ so data authoring stays separate from
 // framework code — add new markets here, not in /frontend/mocks/.
@@ -20,6 +25,7 @@ export interface SeedRule {
   codeUrl?: string
   displayOrder: number
   jurisdictionLevel?: 'city' | 'county' | 'state'
+  linkedSourceTypes?: string[]  // sourceType values of sources that back this rule (seed-only, not stored in DB)
 }
 
 export interface SeedSource {
@@ -78,8 +84,9 @@ export const markets: SeedMarket[] = [
         details: 'Allowed under Home-Sharing Program for primary residences only.',
         displayOrder: 1,
         codeRef: 'SMMC § 6.20.010',
-        codeUrl: 'https://www.smgov.net/Departments/CityClerk/MunicipalCode.aspx',
+        codeUrl: 'https://www.santamonica.gov/process-explainers/how-to-apply-for-a-home-share-business-license',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page', 'municipal_code'],
       },
       {
         ruleKey: 'permit_required',
@@ -88,7 +95,9 @@ export const markets: SeedMarket[] = [
         details: 'City registration and business license required before listing. Annual renewal.',
         displayOrder: 2,
         codeRef: 'SMMC § 6.20.030',
+        codeUrl: 'https://www.smgov.net/Departments/PCD/Permits/Short-Term-Rental-Home-Share-Ordinance/',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page', 'municipal_code'],
       },
       {
         ruleKey: 'owner_occupancy',
@@ -97,7 +106,9 @@ export const markets: SeedMarket[] = [
         details: 'Primary residence requirement — must be your main home.',
         displayOrder: 3,
         codeRef: 'SMMC § 6.20.020',
+        codeUrl: 'https://www.smgov.net/Departments/PCD/Permits/Short-Term-Rental-Home-Share-Ordinance/',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page', 'municipal_code'],
       },
       {
         ruleKey: 'nightly_cap',
@@ -106,20 +117,22 @@ export const markets: SeedMarket[] = [
         details: 'Unhosted stays limited to 30 nights/year total. Hosted stays (host present) are uncapped.',
         displayOrder: 4,
         codeRef: 'SMMC § 6.20.050',
+        codeUrl: 'https://www.smgov.net/Departments/PCD/Permits/Short-Term-Rental-Home-Share-Ordinance/',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page', 'municipal_code'],
       },
     ],
     sources: [
       {
         title: 'Home-Sharing Program — City of Santa Monica',
-        url: 'https://www.santamonica.gov/services/home-sharing',
+        url: 'https://www.santamonica.gov/process-explainers/how-to-apply-for-a-home-share-business-license',
         sourceType: 'official_program_page',
         publisher: 'City of Santa Monica',
         displayOrder: 1,
       },
       {
         title: 'Santa Monica Municipal Code § 6.20',
-        url: 'https://www.smgov.net/Departments/CityClerk/MunicipalCode.aspx',
+        url: 'https://www.smgov.net/Departments/PCD/Permits/Short-Term-Rental-Home-Share-Ordinance/',
         sourceType: 'municipal_code',
         publisher: 'City of Santa Monica',
         displayOrder: 2,
@@ -157,6 +170,7 @@ export const markets: SeedMarket[] = [
         codeRef: 'LAMC § 12.22 A.33',
         codeUrl: 'https://clkrep.lacity.org/onlinedocs/2014/14-1635-s2_ord_185931_1-12-18.pdf',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page', 'city_ordinance'],
       },
       {
         ruleKey: 'permit_required',
@@ -165,7 +179,9 @@ export const markets: SeedMarket[] = [
         details: 'City Home-Sharing registration required. Annual renewal. Number must appear on all listings.',
         displayOrder: 2,
         codeRef: 'Ordinance No. 185,931',
+        codeUrl: 'https://clkrep.lacity.org/onlinedocs/2014/14-1635-s2_ord_185931_1-12-18.pdf',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page', 'city_ordinance'],
       },
       {
         ruleKey: 'owner_occupancy',
@@ -174,7 +190,9 @@ export const markets: SeedMarket[] = [
         details: 'Must be your primary residence (principal place of residence).',
         displayOrder: 3,
         codeRef: 'LAMC § 12.22 A.33(f)',
+        codeUrl: 'https://clkrep.lacity.org/onlinedocs/2014/14-1635-s2_ord_185931_1-12-18.pdf',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page', 'city_ordinance'],
       },
       {
         ruleKey: 'nightly_cap',
@@ -183,7 +201,9 @@ export const markets: SeedMarket[] = [
         details: '120 nights/year maximum for unhosted stays. No cap for hosted stays (host present on property).',
         displayOrder: 4,
         codeRef: 'LAMC § 12.22 A.33(g)',
+        codeUrl: 'https://clkrep.lacity.org/onlinedocs/2014/14-1635-s2_ord_185931_1-12-18.pdf',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page', 'city_ordinance'],
       },
     ],
     sources: [
@@ -232,7 +252,9 @@ export const markets: SeedMarket[] = [
         details: 'Permitted with active City STR program. Multi-unit building restrictions vary by property.',
         displayOrder: 1,
         codeRef: 'WeHo Municipal Code § 19.24',
+        codeUrl: 'https://www.weho.org/city-government/city-departments/community-safety/neighborhood-and-business-safety/business-licensing-and-permits/home-sharing-license',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page', 'municipal_code'],
       },
       {
         ruleKey: 'permit_required',
@@ -241,7 +263,9 @@ export const markets: SeedMarket[] = [
         details: 'City STR permit required. Must be renewed annually.',
         displayOrder: 2,
         codeRef: 'WeHo Municipal Code § 19.24.040',
+        codeUrl: 'https://www.weho.org/city-government/city-departments/community-safety/neighborhood-and-business-safety/business-licensing-and-permits/home-sharing-license',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page', 'municipal_code'],
       },
       {
         ruleKey: 'owner_occupancy',
@@ -249,7 +273,9 @@ export const markets: SeedMarket[] = [
         value: 'Varies',
         details: 'Depends on property type, lease terms, and HOA governing documents.',
         displayOrder: 3,
+        codeUrl: 'https://www.weho.org/city-government/city-departments/community-safety/neighborhood-and-business-safety/business-licensing-and-permits/home-sharing-license',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page'],
       },
       {
         ruleKey: 'tot',
@@ -258,20 +284,22 @@ export const markets: SeedMarket[] = [
         details: 'TOT must be collected from guests and remitted to the City.',
         displayOrder: 4,
         codeRef: 'WeHo Municipal Code § 3.28',
+        codeUrl: 'https://www.weho.org/city-government/city-clerk/municipal-code',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['municipal_code'],
       },
     ],
     sources: [
       {
-        title: 'Short-Term Rental Program — City of West Hollywood',
-        url: 'https://www.weho.org/business/business-licensing/short-term-rentals',
+        title: 'Home Sharing License — City of West Hollywood',
+        url: 'https://www.weho.org/city-government/city-departments/community-safety/neighborhood-and-business-safety/business-licensing-and-permits/home-sharing-license',
         sourceType: 'official_program_page',
         publisher: 'City of West Hollywood',
         displayOrder: 1,
       },
       {
-        title: 'West Hollywood Municipal Code § 19.24',
-        url: 'https://www.weho.org/city-government/city-code',
+        title: 'West Hollywood Municipal Code',
+        url: 'https://www.weho.org/city-government/city-clerk/municipal-code',
         sourceType: 'municipal_code',
         publisher: 'City of West Hollywood',
         displayOrder: 2,
@@ -307,7 +335,9 @@ export const markets: SeedMarket[] = [
         details: 'Residential STR use is generally not permitted under current zoning regulations.',
         displayOrder: 1,
         codeRef: 'Pasadena Zoning Code § 17.50.200',
+        codeUrl: 'https://www.cityofpasadena.net/planning/zoning-code/',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page', 'municipal_code'],
       },
       {
         ruleKey: 'permit_required',
@@ -316,6 +346,7 @@ export const markets: SeedMarket[] = [
         details: 'No city STR permit program exists for most residential properties.',
         displayOrder: 2,
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page'],
       },
       {
         ruleKey: 'investment_property',
@@ -324,7 +355,9 @@ export const markets: SeedMarket[] = [
         details: 'Non-owner-occupied investment properties cannot be used as STRs.',
         displayOrder: 3,
         codeRef: 'Pasadena Zoning Code § 17.50.200(B)',
+        codeUrl: 'https://www.cityofpasadena.net/planning/zoning-code/',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page', 'municipal_code'],
       },
     ],
     sources: [
@@ -373,7 +406,9 @@ export const markets: SeedMarket[] = [
         details: 'Permitted at city level, but subject to Coastal Commission and HOA constraints that vary by property.',
         displayOrder: 1,
         codeRef: 'Malibu Municipal Code § 17.68',
+        codeUrl: 'https://www.malibucity.org/820/Short-Term-Rental-Program',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page', 'municipal_code'],
       },
       {
         ruleKey: 'permit_required',
@@ -382,7 +417,9 @@ export const markets: SeedMarket[] = [
         details: 'City business license and TOT registration required before listing.',
         displayOrder: 2,
         codeRef: 'Malibu Municipal Code § 5.04',
+        codeUrl: 'https://www.malibucity.org/820/Short-Term-Rental-Program',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page'],
       },
       {
         ruleKey: 'coastal_overlay',
@@ -391,7 +428,9 @@ export const markets: SeedMarket[] = [
         details: 'California Coastal Act may impose additional restrictions on use, access, and development.',
         displayOrder: 3,
         codeRef: 'Cal. Pub. Res. Code § 30210',
+        codeUrl: 'https://www.malibucity.org/1070/STR-Ordinances-In-Progress',
         jurisdictionLevel: 'state',
+        linkedSourceTypes: ['other'],
       },
       {
         ruleKey: 'owner_occupancy',
@@ -399,13 +438,15 @@ export const markets: SeedMarket[] = [
         value: 'Not Required (City Level)',
         details: 'No city-wide owner-occupancy requirement. However, always verify HOA and deed restrictions.',
         displayOrder: 4,
+        codeUrl: 'https://www.malibucity.org/820/Short-Term-Rental-Program',
         jurisdictionLevel: 'city',
+        linkedSourceTypes: ['official_program_page'],
       },
     ],
     sources: [
       {
-        title: 'Business License & TOT — City of Malibu',
-        url: 'https://www.malibucity.org/273/Business-License',
+        title: 'Short-Term Rental Program — City of Malibu',
+        url: 'https://www.malibucity.org/820/Short-Term-Rental-Program',
         sourceType: 'official_program_page',
         publisher: 'City of Malibu',
         displayOrder: 1,
@@ -418,10 +459,10 @@ export const markets: SeedMarket[] = [
         displayOrder: 2,
       },
       {
-        title: 'California Coastal Commission — Residential Development',
-        url: 'https://www.coastal.ca.gov/publiced/guide/guide.html',
+        title: 'STR Ordinances In Progress — City of Malibu',
+        url: 'https://www.malibucity.org/1070/STR-Ordinances-In-Progress',
         sourceType: 'other',
-        publisher: 'California Coastal Commission',
+        publisher: 'City of Malibu',
         displayOrder: 3,
       },
     ],

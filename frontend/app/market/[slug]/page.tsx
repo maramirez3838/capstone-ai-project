@@ -45,7 +45,12 @@ export default async function MarketPage({
   const raw = await db.market.findUnique({
     where: { slug },
     include: {
-      rules: { orderBy: { displayOrder: 'asc' } },
+      rules: {
+        orderBy: { displayOrder: 'asc' },
+        include: {
+          linkedSources: { include: { source: true } },
+        },
+      },
       sources: { orderBy: { displayOrder: 'asc' } },
     },
   })
@@ -77,6 +82,14 @@ export default async function MarketPage({
       codeUrl: r.codeUrl ?? undefined,
       displayOrder: r.displayOrder,
       jurisdictionLevel: r.jurisdictionLevel as Market['rules'][number]['jurisdictionLevel'],
+      sources: r.linkedSources.map((ls) => ({
+        id: ls.source.id,
+        title: ls.source.title,
+        url: ls.source.url,
+        sourceType: ls.source.sourceType as Market['sources'][number]['sourceType'],
+        publisher: ls.source.publisher ?? undefined,
+        displayOrder: ls.source.displayOrder,
+      })),
     })),
     sources: raw.sources.map((s) => ({
       id: s.id,
@@ -127,12 +140,17 @@ export default async function MarketPage({
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold text-gray-900">Rule Breakdown</h2>
             <span className="text-xs text-gray-400">
-              {market.rules.length} rule{market.rules.length !== 1 ? 's' : ''} · source-linked
+              {market.rules.length} rule{market.rules.length !== 1 ? 's' : ''}
             </span>
           </div>
           <div className="divide-y divide-gray-100 rounded-2xl border border-gray-100 overflow-hidden">
             {market.rules.map((rule) => (
-              <RuleCard key={rule.ruleKey} rule={rule} lastReviewedAt={market.lastReviewedAt} />
+              <RuleCard
+                key={rule.ruleKey}
+                rule={rule}
+                lastReviewedAt={market.lastReviewedAt}
+                allSources={market.sources}
+              />
             ))}
           </div>
         </div>

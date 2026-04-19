@@ -12,6 +12,13 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createHash } from 'crypto'
 import { Resend } from 'resend'
 import { db } from '@/lib/db'
+import { discoverReplacements, type DiscoveryResult } from '@/lib/agents/source-discoverer'
+import {
+  runRuleUpdater,
+  type FetchedSourceContent,
+  type RuleUpdateResult,
+} from '@/lib/agents/rule-updater'
+import { signApprovalToken } from '@/lib/approval-token'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -226,6 +233,7 @@ export async function runComplianceMonitor(): Promise<void> {
   console.log(`[compliance-monitor] Checking ${due.length} markets`)
 
   const results: MarketResult[] = []
+  const changedSources: FetchedSourceContent[] = []
 
   // Process markets in parallel
   await Promise.all(
@@ -236,6 +244,7 @@ export async function runComplianceMonitor(): Promise<void> {
         SELECT id, url, "contentHash"
         FROM "MarketSource"
         WHERE "marketId" = ${market.id}
+          AND "sourceStatus" = 'active'
       `
 
       const sourceResults: SourceResult[] = []
@@ -269,6 +278,15 @@ export async function runComplianceMonitor(): Promise<void> {
           sourceResults.push({ sourceId: source.id, url: source.url, status: 'unchanged' })
           continue
         }
+
+        // Hand off to rule-updater after this loop
+        changedSources.push({
+          marketId: market.id,
+          marketName: market.name,
+          sourceId: source.id,
+          sourceUrl: source.url,
+          text,
+        })
 
         // Sonnet full diff
         const changes = await sonnetDiff(anthropic, market, source.url, text)
@@ -328,8 +346,41 @@ export async function runComplianceMonitor(): Promise<void> {
     })
   )
 
+  // Persist broken status to DB so the discoverer can query them
+  const brokenSources = results
+    .flatMap((r) => r.sources)
+    .filter((s) => s.status === 'broken')
+    .map((s) => ({ sourceId: s.sourceId, url: s.url }))
+
+  for (const s of brokenSources) {
+    await db.$executeRaw`
+      UPDATE "MarketSource"
+      SET "sourceStatus" = 'broken', "brokenSince" = NOW()
+      WHERE id = ${s.sourceId} AND "sourceStatus" = 'active'
+    `
+  }
+
+  // Run discoverer for broken sources, fold results into the email
+  let discoveryResult: DiscoveryResult = { candidates: [], exhausted: [] }
+  if (brokenSources.length > 0) {
+    console.log(`[compliance-monitor] ${brokenSources.length} broken source(s) — running discoverer`)
+    discoveryResult = await discoverReplacements(brokenSources, anthropic)
+  }
+
+  // Run rule-updater for sources with confirmed meaningful changes
+  let ruleResult: RuleUpdateResult = {
+    codeUrlIssues: [],
+    autoAppliedChanges: [],
+    flaggedChanges: [],
+    candidateNewRules: [],
+  }
+  if (changedSources.length > 0) {
+    console.log(`[compliance-monitor] ${changedSources.length} changed source(s) — running rule updater`)
+    ruleResult = await runRuleUpdater(changedSources, anthropic)
+  }
+
   // Build and send summary email
-  await sendSummaryEmail(resend, results)
+  await sendSummaryEmail(resend, results, discoveryResult, ruleResult)
   console.log('[compliance-monitor] Run complete')
 }
 
@@ -337,12 +388,20 @@ export async function runComplianceMonitor(): Promise<void> {
 // Email report
 // ---------------------------------------------------------------------------
 
-async function sendSummaryEmail(resend: Resend, results: MarketResult[]): Promise<void> {
+async function sendSummaryEmail(
+  resend: Resend,
+  results: MarketResult[],
+  discovery: DiscoveryResult,
+  rules: RuleUpdateResult
+): Promise<void> {
   const flagged = results.filter((r) => r.sources.some((s) => s.status === 'flagged'))
   const updated = results.filter((r) => r.sources.some((s) => s.status === 'auto_updated'))
   const broken = results.flatMap((r) =>
     r.sources.filter((s) => s.status === 'broken').map((s) => ({ market: r.marketName, url: s.url }))
   )
+
+  const appUrl = process.env.AUTH_URL ?? 'http://localhost:3001'
+  const secret = process.env.AUTH_SECRET ?? ''
 
   const lines: string[] = [
     `STR Comply — Weekly Compliance Check`,
@@ -386,18 +445,112 @@ async function sendSummaryEmail(resend: Resend, results: MarketResult[]): Promis
     lines.push(``)
   }
 
-  if (flagged.length === 0 && updated.length === 0 && broken.length === 0) {
+  // Rule field auto-updates (low-risk: details, codeRef, codeUrl)
+  if (rules.autoAppliedChanges.length > 0) {
+    lines.push(`✓ Rule fields auto-updated (${rules.autoAppliedChanges.length}):`)
+    for (const c of rules.autoAppliedChanges) {
+      lines.push(`  • ${c.ruleKey}.${c.field}: "${c.currentValue ?? 'null'}" → "${c.newValue}"`)
+    }
+    lines.push(``)
+  }
+
+  // Rule value changes flagged for human review (high-risk: value)
+  if (rules.flaggedChanges.length > 0) {
+    lines.push(`⚠ Rule values need your review (${rules.flaggedChanges.length}):`)
+    for (const c of rules.flaggedChanges) {
+      lines.push(`  • ${c.ruleKey} (${c.label})`)
+      lines.push(`    Was:        ${c.currentValue ?? 'null'}`)
+      lines.push(`    Now:        ${c.newValue}`)
+      lines.push(`    Quote:      "${c.evidence}"`)
+      lines.push(`    Confidence: ${Math.round(c.confidence * 100)}%`)
+      lines.push(``)
+    }
+  }
+
+  // Candidate new rule types detected in sources
+  if (rules.candidateNewRules.length > 0) {
+    lines.push(`🆕 Candidate new rules (${rules.candidateNewRules.length}) — manual review required:`)
+    lines.push(``)
+    for (const r of rules.candidateNewRules) {
+      lines.push(`  Market:     ${r.marketName}`)
+      lines.push(`  Key:        ${r.proposedRuleKey}`)
+      lines.push(`  Label:      ${r.proposedLabel}`)
+      lines.push(`  Value:      ${r.proposedValue}`)
+      if (r.proposedDetails) lines.push(`  Details:    ${r.proposedDetails}`)
+      if (r.proposedCodeRef) lines.push(`  Code ref:   ${r.proposedCodeRef}`)
+      if (r.proposedCodeUrl) lines.push(`  Code URL:   ${r.proposedCodeUrl}`)
+      lines.push(`  Quote:      "${r.evidence}"`)
+      lines.push(`  Confidence: ${Math.round(r.confidence * 100)}%`)
+      lines.push(`  Source:     ${r.sourceUrl}`)
+      lines.push(``)
+    }
+  }
+
+  // Broken codeUrls (informational — no auto-action, requires human to find replacement)
+  if (rules.codeUrlIssues.length > 0) {
+    lines.push(`✗ Broken rule citation links (${rules.codeUrlIssues.length}):`)
+    for (const u of rules.codeUrlIssues) {
+      const status = u.httpStatus !== null ? `HTTP ${u.httpStatus}` : 'unreachable'
+      lines.push(`  • ${u.marketName} — ${u.label} (${u.ruleKey}): ${status}`)
+      lines.push(`    ${u.codeUrl}`)
+    }
+    lines.push(``)
+  }
+
+  // Discovery candidates — one approve/dismiss link pair per candidate
+  if (discovery.candidates.length > 0) {
+    lines.push(`🔍 Replacement candidates found (${discovery.candidates.length}):`)
+    lines.push(``)
+    for (const c of discovery.candidates) {
+      const token = signApprovalToken(c.pendingSourceId, secret)
+      const approveUrl = `${appUrl}/api/admin/approve-source?id=${c.pendingSourceId}&action=approve&token=${token}`
+      const dismissUrl = `${appUrl}/api/admin/approve-source?id=${c.pendingSourceId}&action=dismiss&token=${token}`
+      lines.push(`  Market:   ${c.marketName}`)
+      lines.push(`  Broken:   ${c.brokenUrl}`)
+      lines.push(`  Found:    ${c.url}`)
+      lines.push(`  Title:    ${c.title}`)
+      lines.push(`  Publisher:${c.publisher}`)
+      lines.push(``)
+      lines.push(`  APPROVE → ${approveUrl}`)
+      lines.push(`  DISMISS → ${dismissUrl}`)
+      lines.push(``)
+    }
+  }
+
+  // Sources where all 3 discovery attempts failed — needs manual work
+  if (discovery.exhausted.length > 0) {
+    lines.push(`❌ Discovery exhausted — manual review needed (${discovery.exhausted.length}):`)
+    for (const e of discovery.exhausted) {
+      lines.push(`  • ${e.marketName}: ${e.brokenUrl} (${e.attempts} attempts failed)`)
+    }
+    lines.push(``)
+  }
+
+  if (
+    flagged.length === 0 &&
+    updated.length === 0 &&
+    broken.length === 0 &&
+    discovery.candidates.length === 0
+  ) {
     lines.push(`All markets are current. No changes detected.`)
   }
 
   const body = lines.join('\n')
   console.log('[compliance-monitor] Email report:\n' + body)
 
+  const needsAction =
+    flagged.length > 0 ||
+    discovery.candidates.length > 0 ||
+    discovery.exhausted.length > 0 ||
+    rules.flaggedChanges.length > 0 ||
+    rules.candidateNewRules.length > 0 ||
+    rules.codeUrlIssues.length > 0
+
   try {
     await resend.emails.send({
       from: 'STR Comply <onboarding@resend.dev>',
       to: process.env.COMPLIANCE_REPORT_EMAIL ?? 'pinoiboimusic@gmail.com',
-      subject: `STR Comply — Compliance Check ${flagged.length > 0 ? '⚠ Action needed' : '✓ All clear'}`,
+      subject: `STR Comply — Compliance Check ${needsAction ? '⚠ Action needed' : '✓ All clear'}`,
       text: body,
     })
   } catch (err) {

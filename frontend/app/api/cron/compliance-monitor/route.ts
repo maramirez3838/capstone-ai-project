@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { runComplianceMonitor } from '@/lib/compliance-monitor'
+import { runComplianceMonitor } from '@/lib/agents/compliance-monitor'
 
 // Vercel cron calls this every Monday at 9am UTC (see vercel.json).
 // Protected by CRON_SECRET — unauthenticated requests are rejected.

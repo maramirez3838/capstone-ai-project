@@ -21,7 +21,7 @@ This is **not** a chat or AI answer product. Compliance summaries are pre-writte
 /frontend              — Next.js frontend (current build phase)
 /backend               — Backend API and database (coming when BE engineer joins)
 /Reference Artifacts   — Versioned PRD and SRD docs
-CLAUDE_project.md      — Claude AI instructions for this project
+CLAUDE.md              — Claude AI instructions for this project
 lessons.md             — Running log of build decisions and lessons learned
 ```
 
@@ -75,9 +75,9 @@ chore/short-description   — non-feature work (config, deps, docs)
 
 ## Reference artifacts
 
-Product and system requirements are versioned in `/Reference Artifacts`. The current versions are tracked in [`CLAUDE_project.md`](CLAUDE_project.md).
+Product and system requirements are versioned in `/Reference Artifacts`. The current versions are tracked in [`CLAUDE.md`](CLAUDE.md).
 
-Always check `CLAUDE_project.md` for the latest file before reading any spec — do not read older versions.
+Always check `CLAUDE.md` for the latest file before reading any spec — do not read older versions.
 
 ---
 

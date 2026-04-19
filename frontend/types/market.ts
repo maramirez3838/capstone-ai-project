@@ -15,6 +15,7 @@ export interface MarketRule {
   codeRef?: string   // e.g. "SMMC § 6.20.010"
   codeUrl?: string   // link to the cited code section, if available
   jurisdictionLevel?: 'city' | 'county' | 'state'  // which level of government mandates this rule
+  sources?: MarketSource[]  // source documents explicitly linked to this rule via join table
 }
 
 export interface MarketSource {

@@ -58,6 +58,7 @@ async function main() {
 
     // Delete and re-insert child records on each run so edits to
     // rules/sources/aliases are always reflected after re-seeding.
+    // MarketRuleSource rows cascade-delete when their parent rule or source is deleted.
     await db.marketAlias.deleteMany({ where: { marketId: upserted.id } })
     await db.marketRule.deleteMany({ where: { marketId: upserted.id } })
     await db.marketSource.deleteMany({ where: { marketId: upserted.id } })
@@ -104,8 +105,38 @@ async function main() {
       })
     }
 
+    // Rule-source joins: link each rule to its declared sources.
+    // Uses $queryRaw/$executeRaw — db.marketRuleSource is undefined with Prisma 7 + driver adapter.
+    let joinCount = 0
+    for (const ruleData of market.rules) {
+      if (!ruleData.linkedSourceTypes?.length) continue
+      const rules = await db.$queryRaw<{ id: string }[]>`
+        SELECT id FROM "MarketRule"
+        WHERE "marketId" = ${upserted.id} AND "ruleKey" = ${ruleData.ruleKey}
+        LIMIT 1
+      `
+      const rule = rules[0]
+      if (!rule) continue
+      for (const sourceType of ruleData.linkedSourceTypes) {
+        const sources = await db.$queryRaw<{ id: string }[]>`
+          SELECT id FROM "MarketSource"
+          WHERE "marketId" = ${upserted.id} AND "sourceType" = ${sourceType}
+          LIMIT 1
+        `
+        const source = sources[0]
+        if (!source) continue
+        const newId = (await import('crypto')).randomUUID()
+        await db.$executeRaw`
+          INSERT INTO "MarketRuleSource" (id, "ruleId", "sourceId")
+          VALUES (${newId}, ${rule.id}, ${source.id})
+          ON CONFLICT ("ruleId", "sourceId") DO NOTHING
+        `
+        joinCount++
+      }
+    }
+
     console.log(
-      `  ✓ ${market.name} — ${market.rules.length} rules, ${market.sources.length} sources, ${market.aliases.length} aliases`
+      `  ✓ ${market.name} — ${market.rules.length} rules, ${market.sources.length} sources, ${market.aliases.length} aliases, ${joinCount} rule-source links`
     )
   }
 

@@ -29,7 +29,12 @@ export async function GET(
     const market = await db.market.findUnique({
       where: { slug: parseResult.data },
       include: {
-        rules: { orderBy: { displayOrder: 'asc' } },
+        rules: {
+          orderBy: { displayOrder: 'asc' },
+          include: {
+            linkedSources: { include: { source: true } },
+          },
+        },
         sources: { orderBy: { displayOrder: 'asc' } },
       },
     })
@@ -63,6 +68,14 @@ export async function GET(
         codeUrl: r.codeUrl,
         displayOrder: r.displayOrder,
         jurisdictionLevel: r.jurisdictionLevel,
+        sources: r.linkedSources.map((ls) => ({
+          id: ls.source.id,
+          title: ls.source.title,
+          url: ls.source.url,
+          sourceType: ls.source.sourceType,
+          publisher: ls.source.publisher,
+          displayOrder: ls.source.displayOrder,
+        })),
       })),
       sources: market.sources.map((s) => ({
         id: s.id,

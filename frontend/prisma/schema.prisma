@@ -152,7 +152,8 @@ model MarketRule {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  market            Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  market            Market             @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  linkedSources     MarketRuleSource[]
 
   @@index([marketId, ruleKey])
 }
@@ -163,21 +164,47 @@ model MarketRule {
 // Ordered by displayOrder. Clicking a source is tracked via telemetry.
 // ---------------------------------------------------------------------------
 model MarketSource {
-  id           String   @id @default(cuid())
-  marketId     String
-  title        String
-  url          String
+  id                String    @id @default(cuid())
+  marketId          String
+  title             String
+  url               String
   // sourceType: "official_program_page" | "municipal_code" | "tax_registration"
   //             | "city_ordinance" | "other"
-  sourceType   String
-  publisher    String?
-  displayOrder Int      @default(0)
-  contentHash  String?  // SHA-256 of stripped page text — used to skip unchanged sources
-  createdAt    DateTime @default(now())
+  sourceType        String
+  publisher         String?
+  displayOrder      Int       @default(0)
+  contentHash       String?   // SHA-256 of stripped page text — used to skip unchanged sources
+  createdAt         DateTime  @default(now())
 
-  market       Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  // Source lifecycle tracking for the symbiotic monitor ↔ discoverer system
+  // sourceStatus: "active" | "broken" | "pending_review" | "replaced"
+  sourceStatus      String    @default("active")
+  brokenSince       DateTime? // set when monitor first marks this source broken
+  discoveryAttempts Int       @default(0) // incremented each time discoverer runs; capped at 3
+  replacesId        String?   // points to the broken source this record replaces
+
+  market       Market             @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  linkedRules  MarketRuleSource[]
 
   @@index([marketId])
+  @@index([sourceStatus])
+}
+
+// ---------------------------------------------------------------------------
+// MarketRuleSource
+// Join table linking individual rules to the source documents that back them.
+// A rule may cite multiple sources; a source may back multiple rules.
+// ---------------------------------------------------------------------------
+model MarketRuleSource {
+  id        String       @id @default(cuid())
+  ruleId    String
+  sourceId  String
+
+  rule      MarketRule   @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  source    MarketSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([ruleId, sourceId])
+  @@index([ruleId])
 }
 
 // ---------------------------------------------------------------------------

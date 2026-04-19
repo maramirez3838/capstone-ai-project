@@ -12,8 +12,8 @@ update this table before anything else.
 
 | Artifact | Current File | Version | Notes |
 | :--- | :--- | :--- | :--- |
-| PRD | `Reference Artifacts/STR_Comply_PRD_v2.2.md` | v2.2 | Auth wired; compliance monitor agent built (off by default); RICE table and refresh model updated |
-| SRD | `Reference Artifacts/STR_Comply_SRD_v1.3.md` | v1.3 | Auth wired (NextAuth v5 + custom PrismaRawAdapter); compliance monitor agent documented (section 15A); NextAuth schema models added; MarketSource.contentHash added; project structure and DoD checklist updated |
+| PRD | `Reference Artifacts/STR_Comply_PRD_v2.3.md` | v2.3 | Source Discovery Agent + Approval Flow added; RICE table updated; refresh model and constraints updated |
+| SRD | `Reference Artifacts/STR_Comply_SRD_v1.4.md` | v1.4 | MarketSource schema expanded (sourceStatus, brokenSince, discoveryAttempts, replacesId); section 15A expanded (source discovery + approval flow); new API endpoint /api/admin/approve-source; new lib files documented; project structure and DoD checklist updated |
 | ICP | `Reference Artifacts/STR_Comply_ICP_v1.0.md` | v1.0 | Ideal client profile and Marcus Chen persona |
 | Accessibility Spec | `Reference Artifacts/STR_Comply_AccessibilitySpec_v1.0.md` | v1.0 | WCAG 2.1 AA implementation spec; component-level criteria and dev checklist |
 

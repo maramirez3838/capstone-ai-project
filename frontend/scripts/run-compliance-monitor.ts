@@ -9,10 +9,11 @@ import { resolve } from 'path'
 // Must run before any other imports that touch process.env (db, anthropic, etc.)
 configDotenv({ path: resolve(process.cwd(), '.env.local') })
 
-// Dynamic import ensures lib/db.ts initializes AFTER env vars are loaded
-const { runComplianceMonitor } = await import('../lib/compliance-monitor.js')
-
-runComplianceMonitor()
+// Dynamic import inside async IIFE ensures lib/db.ts initializes AFTER env vars are loaded
+;(async () => {
+  const { runComplianceMonitor } = await import('../lib/agents/compliance-monitor.js')
+  await runComplianceMonitor()
+})()
   .then(() => process.exit(0))
   .catch((err: unknown) => {
     console.error('[compliance-monitor] Fatal error:', err)

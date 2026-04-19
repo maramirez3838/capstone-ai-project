@@ -107,10 +107,10 @@ The dev server (`npm run dev`) reads `.env.local` automatically, so API routes w
 ## Git and file management
 
 ### [2026-04-12] `lessons.md` lives at the project root, not in `/docs/`
-**Rule:** The file header and `CLAUDE_project.md` both reference `./docs/lessons.md`, but the file actually lives at `./lessons.md` (project root). No `/docs/` directory exists. Always write and reference the file at the project root. Update the header comment and `CLAUDE_project.md` reference to match reality before they mislead a new contributor.
+**Rule:** The file header and `CLAUDE.md` both reference `./docs/lessons.md`, but the file actually lives at `./lessons.md` (project root). No `/docs/` directory exists. Always write and reference the file at the project root. Update the header comment and `CLAUDE.md` reference to match reality before they mislead a new contributor.
 
 ### [2026-04-12] Next.js project does not use a `/src/` subdirectory
-**Rule:** `CLAUDE_project.md` shows paths like `/frontend/src/app`, `/frontend/src/components`, etc. The actual project uses `/frontend/app`, `/frontend/components`, `/frontend/lib`, `/frontend/mocks`, `/frontend/types` directly. Do not create a `src/` layer. Update the project structure diagram in `CLAUDE_project.md` to match the real layout.
+**Rule:** `CLAUDE.md` shows paths like `/frontend/src/app`, `/frontend/src/components`, etc. The actual project uses `/frontend/app`, `/frontend/components`, `/frontend/lib`, `/frontend/mocks`, `/frontend/types` directly. Do not create a `src/` layer. Update the project structure diagram in `CLAUDE.md` to match the real layout.
 
 ---
 
