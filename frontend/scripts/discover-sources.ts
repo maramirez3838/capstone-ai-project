@@ -87,6 +87,13 @@ I need:
 
 Rules:
 - Return ONLY official government sources (.gov, city, county, or official municipal domains)
+- ecode360.com is an approved municipal code publisher — include it when it hosts the city's official code
+- Prefer ecode360.com over general city website links when it hosts the municipal code
+- When citing a specific code section, find the direct section URL — not just the jurisdiction homepage:
+    • ecode360.com: section URLs use a numeric GUID (e.g. ecode360.com/42735096), not the jurisdiction code like SA5008
+    • amlegal.com: section URLs end in /0-0-0-{node-id} for the specific section
+    • municode.com: section URLs use ?nodeId={HIERARCHY_ID} anchored to the specific section
+- Always prefer a section-anchored URL over the top-level code homepage
 - No third-party aggregators, news articles, real estate sites, or Airbnb/VRBO pages
 - Prefer stable top-level program pages over deep PDF links for long-term reliability
 - Assign displayOrder 1 (most important) through N (least important)

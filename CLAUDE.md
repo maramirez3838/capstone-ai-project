@@ -13,7 +13,7 @@ update this table before anything else.
 | Artifact | Current File | Version | Notes |
 | :--- | :--- | :--- | :--- |
 | PRD | `Reference Artifacts/STR_Comply_PRD_v2.3.md` | v2.3 | Source Discovery Agent + Approval Flow added; RICE table updated; refresh model and constraints updated |
-| SRD | `Reference Artifacts/STR_Comply_SRD_v1.4.md` | v1.4 | MarketSource schema expanded (sourceStatus, brokenSince, discoveryAttempts, replacesId); section 15A expanded (source discovery + approval flow); new API endpoint /api/admin/approve-source; new lib files documented; project structure and DoD checklist updated |
+| SRD | `Reference Artifacts/STR_Comply_SRD_v1.5.md` | v1.5 | Municipal code URL strategy codified (section 15A.9); section-anchored deep links required on ecode360/amlegal/municode; codeRef corrections for Malibu and Pasadena; agent prompts updated |
 | ICP | `Reference Artifacts/STR_Comply_ICP_v1.0.md` | v1.0 | Ideal client profile and Marcus Chen persona |
 | Accessibility Spec | `Reference Artifacts/STR_Comply_AccessibilitySpec_v1.0.md` | v1.0 | WCAG 2.1 AA implementation spec; component-level criteria and dev checklist |
 | Design System | `Reference Artifacts/STR_Comply_DesignSystem_v1.0.md` | v1.0 | Token definitions, component patterns, color palette, typography, anti-patterns — load into context for all UI work |

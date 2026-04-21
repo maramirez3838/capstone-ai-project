@@ -55,6 +55,9 @@
 
 ## Data and mock fixtures
 
+### [2026-04-20] Municipal code codeUrls pointed to platform homepages instead of specific sections
+**Rule:** `codeUrl` in `backend/data/markets.ts` must point to section-anchored URLs on the official municipal code platform, not the jurisdiction homepage. ecode360.com uses numeric GUIDs (e.g. `/42735096`), amlegal uses `/0-0-0-{id}`, and municode uses `?nodeId={HIERARCHY_ID}`. Always verify the `codeRef` section number actually governs STRs before seeding — § 17.68 in Malibu was Temporary Use Permits (correct: § 17.55), and § 17.50.200 in Pasadena was Personal Services/Pawnshops (correct: § 17.50.296).
+
 ### [2026-04-13] Aliases rule updated — `MarketAlias` table IS in the DB schema (SRD v1.1)
 **Rule:** Aliases do NOT belong as a flat column on the `Market` table. They belong in a separate `MarketAlias` join table (one row per alias, indexed on `alias`). This is what the SRD v1.1 specifies and is required for server-side search matching on `GET /api/search`. The FE `Market` type still carries `aliases: string[]` for display/mock purposes, but the backend stores them normalized in `MarketAlias`. The earlier rule ("aliases FE-only, never in DB") was written before the SRD finalized the search architecture and is now superseded.
 

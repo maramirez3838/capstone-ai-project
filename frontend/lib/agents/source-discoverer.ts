@@ -96,6 +96,13 @@ Find the current official replacement. I need the ${label} for ${source.marketNa
 
 Rules:
 - Return ONLY official government sources (.gov, city, county, or known municipal domains)
+- ecode360.com is an approved municipal code publisher — include it when it hosts the city's official code
+- Prefer ecode360.com over general city website links when it hosts the municipal code
+- When citing a specific code section, find the direct section URL — not just the jurisdiction homepage:
+    • ecode360.com: section URLs use a numeric GUID (e.g. ecode360.com/42735096), not the jurisdiction code like SA5008
+    • amlegal.com: section URLs end in /0-0-0-{node-id} for the specific section
+    • municode.com: section URLs use ?nodeId={HIERARCHY_ID} anchored to the specific section
+- Always prefer a section-anchored URL over the top-level code homepage
 - Prefer stable top-level program pages over deep PDF links
 - No third-party aggregators, news articles, or real estate sites
 - If you find 1–3 valid candidates, include all of them
