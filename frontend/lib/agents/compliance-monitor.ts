@@ -24,6 +24,18 @@ import { signApprovalToken } from '@/lib/approval-token'
 // Types
 // ---------------------------------------------------------------------------
 
+type MarketRow = {
+  id: string
+  name: string
+  strStatus: string
+  permitRequired: string
+  ownerOccupancyRequired: string
+  summary: string
+  notableRestrictions: string | null
+  freshnessStatus: string
+  lastReviewedAt: Date
+}
+
 type ChangeField =
   | 'strStatus'
   | 'permitRequired'
@@ -205,19 +217,7 @@ export async function runComplianceMonitor(): Promise<void> {
   const resend = new Resend(process.env.RESEND_KEY)
 
   // Fetch all markets with their sources
-  const markets = await db.$queryRaw<
-    Array<{
-      id: string
-      name: string
-      strStatus: string
-      permitRequired: string
-      ownerOccupancyRequired: string
-      summary: string
-      notableRestrictions: string | null
-      freshnessStatus: string
-      lastReviewedAt: Date
-    }>
-  >`
+  const markets = await db.$queryRaw<Array<MarketRow>>`
     SELECT id, name, "strStatus", "permitRequired", "ownerOccupancyRequired",
            summary, "notableRestrictions", "freshnessStatus", "lastReviewedAt"
     FROM "Market"
@@ -237,7 +237,7 @@ export async function runComplianceMonitor(): Promise<void> {
 
   // Process markets in parallel
   await Promise.all(
-    due.map(async (market) => {
+    due.map(async (market: MarketRow) => {
       const sources = await db.$queryRaw<
         Array<{ id: string; url: string; contentHash: string | null }>
       >`

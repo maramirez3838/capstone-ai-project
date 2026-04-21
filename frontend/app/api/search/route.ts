@@ -9,20 +9,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
+import { normalizeQuery } from '@/lib/normalize'
 
 // Input schema — q is required, max 100 chars to prevent abuse
 const QuerySchema = z.object({
   q: z.string().min(1, 'Search query is required').max(100, 'Query too long'),
 })
-
-// Normalize a search string the same way the FE does in lib/search.ts
-function normalizeQuery(input: string): string {
-  return input
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ' ')
-    .replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, '')
-}
 
 export async function GET(request: NextRequest) {
   // Parse and validate the query param

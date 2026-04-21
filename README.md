@@ -2,6 +2,8 @@
 
 A desktop-first short-term rental compliance lookup tool for STR investors. Search any LA-area market and get a structured compliance summary, key rules, source links, and freshness indicators — all in one place.
 
+**Production:** https://frontend-seven-plum-13.vercel.app
+
 This is **not** a chat or AI answer product. Compliance summaries are pre-written, human-reviewed content, not generated at runtime.
 
 ---
@@ -11,37 +13,36 @@ This is **not** a chat or AI answer product. Compliance summaries are pre-writte
 - Search a market by name to get its STR compliance status
 - View permit requirements, owner-occupancy rules, and key regulations
 - See source links with freshness indicators so you know how current the data is
-- Save markets to a personal watchlist for quick reference
+- Save markets to a personal watchlist (requires sign-in via magic link)
 
 ---
 
 ## Project structure
 
 ```
-/frontend              — Next.js frontend (current build phase)
-/backend               — Backend API and database (coming when BE engineer joins)
-/Reference Artifacts   — Versioned PRD and SRD docs
+/frontend              — Next.js app (App Router, TypeScript, Tailwind)
+/backend               — Canonical market seed data
+/Reference Artifacts   — Versioned PRD, SRD, and design system docs
 CLAUDE.md              — Claude AI instructions for this project
 lessons.md             — Running log of build decisions and lessons learned
 ```
 
 ---
 
-## Current phase: UI-first
+## Running locally
 
-The frontend is being built before the backend exists. All data comes from static mock files — no database or API calls yet.
+See [`frontend/README.md`](frontend/README.md) for full setup instructions, including environment variables, database setup, and key commands.
 
-See [`frontend/README.md`](frontend/README.md) for setup instructions and a full breakdown of the frontend structure.
-
-**To run the app locally:**
+**Quick start:**
 
 ```bash
 cd frontend
 npm install
+cp .env.example .env.local   # fill in your values
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open http://localhost:3001.
 
 ---
 
@@ -49,10 +50,12 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 15 (App Router), TypeScript, Tailwind CSS |
-| Backend (planned) | Next.js API routes, PostgreSQL, Prisma ORM |
-| Auth (planned) | NextAuth / Auth.js — email magic link |
-| Hosting (planned) | Vercel (app) + Neon or Supabase (database) |
+| Framework | Next.js 15 (App Router), TypeScript, Tailwind CSS |
+| Database | PostgreSQL via Neon, Prisma 7 ORM |
+| Auth | NextAuth v5 + Resend (magic links) |
+| AI | Anthropic SDK (background compliance monitor only) |
+| Hosting | Vercel |
+| Tests | Vitest |
 
 ---
 
@@ -75,12 +78,6 @@ chore/short-description   — non-feature work (config, deps, docs)
 
 ## Reference artifacts
 
-Product and system requirements are versioned in `/Reference Artifacts`. The current versions are tracked in [`CLAUDE.md`](CLAUDE.md).
+Product and system requirements are versioned in `/Reference Artifacts`. Current versions are tracked in [`CLAUDE.md`](CLAUDE.md).
 
-Always check `CLAUDE.md` for the latest file before reading any spec — do not read older versions.
-
----
-
-## Environment variables
-
-Copy `frontend/.env.example` to `frontend/.env.local` and fill in values before running locally. The example file documents every variable the app expects.
+Always check `CLAUDE.md` for the latest file before reading any spec.

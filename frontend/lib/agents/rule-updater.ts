@@ -136,8 +136,8 @@ export async function checkCodeUrls(marketIds: string[]): Promise<CodeUrlCheckRe
   if (rules.length === 0) return []
 
   // Run all HEAD checks concurrently; fall back to GET if server rejects HEAD
-  const settled = await Promise.allSettled(
-    rules.map(async (rule) => {
+  const settled: PromiseSettledResult<CodeUrlCheckResult>[] = await Promise.allSettled(
+    rules.map(async (rule: (typeof rules)[number]) => {
       try {
         let res = await fetch(rule.codeUrl, {
           method: 'HEAD',
