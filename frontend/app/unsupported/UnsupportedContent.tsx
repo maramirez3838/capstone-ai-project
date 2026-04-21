@@ -28,13 +28,14 @@ export default function UnsupportedContent({ markets }: Props) {
   }, [query])
 
   return (
+    <div className="min-h-screen bg-gray-950">
     <div className="max-w-2xl mx-auto px-6 py-16">
       {/* Message */}
       <div className="text-center mb-12">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gray-800 text-2xl mb-5">
           🗺
         </div>
-        <h1 className="text-2xl font-bold text-gray-100 mb-3">
+        <h1 className="text-2xl font-medium text-gray-100 mb-3">
           {query ? (
             <>&ldquo;{query}&rdquo; isn&apos;t covered yet.</>
           ) : (
@@ -58,7 +59,7 @@ export default function UnsupportedContent({ markets }: Props) {
 
       {/* Supported markets */}
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-gray-600 mb-4">
+        <p className="text-xs font-medium uppercase tracking-widest text-gray-600 mb-4">
           Supported markets
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -66,10 +67,10 @@ export default function UnsupportedContent({ markets }: Props) {
             <Link
               key={m.slug}
               href={`/market/${m.slug}`}
-              className="group flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900 px-4 py-3 hover:border-indigo-700 hover:bg-gray-800/60 transition-all"
+              className="group flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900 px-4 py-3 hover:border-accent-500 hover:bg-gray-800/60 transition-all"
             >
               <div>
-                <p className="text-sm font-semibold text-gray-200 group-hover:text-indigo-300 transition-colors">
+                <p className="text-sm font-medium text-gray-200 group-hover:text-accent-50 transition-colors">
                   {m.name}
                 </p>
                 {m.countyName && (
@@ -81,6 +82,7 @@ export default function UnsupportedContent({ markets }: Props) {
           ))}
         </div>
       </div>
+    </div>
     </div>
   )
 }

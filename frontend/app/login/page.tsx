@@ -44,7 +44,7 @@ function LoginForm() {
     return (
       <div className="text-center py-4 space-y-3">
         <div className="text-3xl">✉</div>
-        <p className="text-gray-100 font-semibold">Check your email</p>
+        <p className="text-gray-100 font-medium">Check your email</p>
         <p className="text-sm text-gray-400">
           We sent a sign-in link to <span className="text-gray-200">{email}</span>.
           Click it to continue.
@@ -53,7 +53,7 @@ function LoginForm() {
           Didn&apos;t get it? Check your spam folder or{' '}
           <button
             onClick={() => { setSubmitted(false); setEmail('') }}
-            className="text-indigo-400 hover:text-indigo-300 underline"
+            className="text-accent-500 hover:text-accent-700 underline"
           >
             try again
           </button>
@@ -81,7 +81,7 @@ function LoginForm() {
             if (error) setError('')
           }}
           placeholder="you@example.com"
-          className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-900/50 outline-none transition-all"
+          className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:border-accent-500 focus:ring-2 focus:ring-accent-50 outline-none transition-all"
           autoFocus
         />
         {error && <p className="mt-1.5 text-sm text-red-400">{error}</p>}
@@ -89,7 +89,7 @@ function LoginForm() {
 
       <button
         type="submit"
-        className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
+        className="w-full rounded-lg bg-accent-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-accent-700 transition-colors"
       >
         Send sign-in link
       </button>
@@ -103,11 +103,11 @@ export default function LoginPage() {
       <div className="mb-8 text-center">
         <Link
           href="/"
-          className="text-base font-bold text-gray-100 hover:text-indigo-400 transition-colors"
+          className="text-base font-medium text-gray-100 hover:text-accent-500 transition-colors"
         >
           STR Comply
         </Link>
-        <h1 className="mt-4 text-xl font-semibold text-gray-100">Sign in</h1>
+        <h1 className="mt-4 text-xl font-medium text-gray-100">Sign in</h1>
         <p className="mt-1.5 text-sm text-gray-500">
           Sign in to track markets and manage your acquisition pipeline.
         </p>

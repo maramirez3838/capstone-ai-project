@@ -17,7 +17,7 @@ interface Props {
 export default function SearchBar({
   onSearch,
   autoFocus = false,
-  placeholder = 'Enter an address or city — try "Santa Monica" or "123 Main St, LA"',
+  placeholder = 'Enter a city or market name — try "Santa Monica" or "West Hollywood"',
 }: Props) {
   const router = useRouter()
   const [query, setQuery] = useState('')
@@ -75,7 +75,7 @@ export default function SearchBar({
         Enter a city, market, or property address
       </label>
 
-      <div className="flex items-center rounded-full border border-gray-200 shadow-md focus-within:shadow-lg focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100 transition-all bg-white overflow-hidden">
+      <div className="flex items-center rounded-full border border-gray-200 shadow-md focus-within:shadow-lg focus-within:border-accent-500 focus-within:ring-2 focus-within:ring-accent-50 transition-all bg-white overflow-hidden">
         {/* Search icon — decorative, label carries the meaning */}
         <div className="pl-5 pr-3 flex-shrink-0 text-gray-400" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -107,7 +107,7 @@ export default function SearchBar({
             type="submit"
             disabled={isLoading}
             aria-busy={isLoading}
-            className="px-6 py-2.5 bg-orange-700 text-white text-sm font-semibold rounded-full hover:bg-orange-800 active:bg-orange-900 transition-colors whitespace-nowrap disabled:opacity-60"
+            className="px-6 py-2.5 bg-accent-500 text-white text-sm font-medium rounded-full hover:bg-accent-700 active:bg-accent-900 transition-colors whitespace-nowrap disabled:opacity-60"
           >
             {isLoading ? 'Searching…' : 'Look up'}
           </button>
@@ -116,7 +116,7 @@ export default function SearchBar({
 
       {/* Hint text — always in DOM, referenced by aria-describedby */}
       <p id="search-hint" className="mt-4 text-sm text-gray-400 pl-1">
-        Try a city name, market, or full property address — e.g. &ldquo;Santa Monica&rdquo; or &ldquo;123 Main St, Los Angeles&rdquo;
+        Try a city or market name — e.g. &ldquo;Santa Monica&rdquo; or &ldquo;West Hollywood&rdquo;
       </p>
 
       {/* Error — always in DOM, empty when no error; role="alert" announces immediately */}

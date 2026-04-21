@@ -1,0 +1,55 @@
+/* STR Comply design tokens — single source of truth for all visual values.
+   Import this before globals.css in the root layout. Never hardcode hex values in components. */
+
+:root {
+  /* Neutrals */
+  --neutral-50:  #F8FAFC;
+  --neutral-100: #F1F5F9;
+  --neutral-200: #E2E8F0;
+  --neutral-300: #CBD5E1;
+  --neutral-400: #94A3B8;
+  --neutral-500: #64748B;
+  --neutral-600: #475569;
+  --neutral-700: #334155;
+  --neutral-800: #1E293B;
+  --neutral-900: #0F172A;
+
+  /* Accent — interactive elements only (buttons, links, focus rings) */
+  --accent-50:  #EEF2FF;
+  --accent-500: #4F46E5;
+  --accent-700: #3730A3;
+  --accent-900: #1E1B4B;
+
+  /* Status — reserved exclusively for STR legality */
+  --status-allowed-bg:          #F0FDF4;
+  --status-allowed-border:      #BBF7D0;
+  --status-allowed-text:        #15803D;
+  --status-allowed-icon:        #16A34A;
+
+  --status-conditional-bg:      #FFFBEB;
+  --status-conditional-border:  #FDE68A;
+  --status-conditional-text:    #B45309;
+  --status-conditional-icon:    #D97706;
+
+  --status-not-allowed-bg:      #FEF2F2;
+  --status-not-allowed-border:  #FECACA;
+  --status-not-allowed-text:    #B91C1C;
+  --status-not-allowed-icon:    #DC2626;
+
+  /* Freshness — data age only; deliberately different hues from status */
+  --freshness-fresh-dot:        #0D9488;
+  --freshness-review-due-dot:   #EA580C;
+  --freshness-needs-review-dot: #7C3AED;
+
+  /* Semantic aliases */
+  --text-primary:   var(--neutral-900);
+  --text-secondary: var(--neutral-600);
+  --text-muted:     var(--neutral-400);
+
+  --surface-page:   #ffffff;
+  --surface-card:   #ffffff;
+  --surface-subtle: var(--neutral-50);
+
+  --border-subtle:  var(--neutral-200);
+  --border-default: var(--neutral-300);
+}

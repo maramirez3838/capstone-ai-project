@@ -23,10 +23,12 @@ export default function WatchlistPage() {
 
   if (!authMounted || !watchlistMounted) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-16 space-y-3">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-16 rounded-lg bg-gray-900 animate-pulse" />
-        ))}
+      <div className="min-h-screen bg-gray-950">
+        <div className="max-w-4xl mx-auto px-6 py-16 space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-16 rounded-lg bg-gray-800 animate-pulse" />
+          ))}
+        </div>
       </div>
     )
   }
@@ -34,18 +36,19 @@ export default function WatchlistPage() {
   if (!isSignedIn) return null
 
   return (
+    <div className="min-h-screen bg-gray-950">
     <div className="max-w-4xl mx-auto px-6 py-10">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">My Markets</h1>
+          <h1 className="text-2xl font-medium text-gray-100">My Markets</h1>
           <p className="text-sm text-gray-500 mt-1">
             {entries.length} of 25 markets tracked
           </p>
         </div>
         <Link
           href="/"
-          className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+          className="text-sm font-medium text-accent-500 hover:text-accent-700 transition-colors"
         >
           + Track a market
         </Link>
@@ -60,7 +63,7 @@ export default function WatchlistPage() {
           </p>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg bg-accent-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-accent-700 transition-colors"
           >
             Find a market
           </Link>
@@ -73,22 +76,22 @@ export default function WatchlistPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-800 bg-gray-800/50">
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                   Market
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                   STR Eligibility
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 hidden md:table-cell">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 hidden md:table-cell">
                   Permit
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 hidden md:table-cell">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 hidden md:table-cell">
                   Owner-Occupied
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 hidden lg:table-cell">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 hidden lg:table-cell">
                   Freshness
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 hidden lg:table-cell">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 hidden lg:table-cell">
                   Saved
                 </th>
                 <th className="px-4 py-3" />
@@ -100,7 +103,7 @@ export default function WatchlistPage() {
                   <td className="px-5 py-4">
                     <Link
                       href={`/market/${marketSlug}`}
-                      className="font-semibold text-gray-200 hover:text-indigo-400 transition-colors"
+                      className="font-medium text-gray-200 hover:text-accent-500 transition-colors"
                     >
                       {market.name}
                     </Link>
@@ -141,6 +144,7 @@ export default function WatchlistPage() {
           </table>
         </div>
       )}
+    </div>
     </div>
   )
 }

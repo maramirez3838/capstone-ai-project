@@ -59,7 +59,7 @@ export async function GET(
       summary: market.summary,
       notableRestrictions: market.notableRestrictions,
       lastReviewedAt: market.lastReviewedAt.toISOString(),
-      rules: market.rules.map((r) => ({
+      rules: market.rules.map((r: (typeof market.rules)[number]) => ({
         ruleKey: r.ruleKey,
         label: r.label,
         value: r.value,
@@ -68,7 +68,7 @@ export async function GET(
         codeUrl: r.codeUrl,
         displayOrder: r.displayOrder,
         jurisdictionLevel: r.jurisdictionLevel,
-        sources: r.linkedSources.map((ls) => ({
+        sources: r.linkedSources.map((ls: (typeof r.linkedSources)[number]) => ({
           id: ls.source.id,
           title: ls.source.title,
           url: ls.source.url,
@@ -77,7 +77,7 @@ export async function GET(
           displayOrder: ls.source.displayOrder,
         })),
       })),
-      sources: market.sources.map((s) => ({
+      sources: market.sources.map((s: (typeof market.sources)[number]) => ({
         id: s.id,
         title: s.title,
         url: s.url,

@@ -68,7 +68,8 @@ export async function POST(request: NextRequest) {
         marketId,
         queryText: queryText ?? null,
         sessionId: sessionId ?? null,
-        metadataJson: metadata ?? null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        metadataJson: metadata as any,
         // userId is null until auth is wired — that's expected
         userId: null,
       },

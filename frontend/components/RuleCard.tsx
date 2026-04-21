@@ -10,10 +10,12 @@ interface Props {
   allSources?: MarketSource[]  // all market-level sources, used as supplemental fallback
 }
 
+// All jurisdiction levels use identical neutral styling — coloring by level
+// would create a false visual vocabulary that conflicts with status/freshness.
 const jurisdictionStyles: Record<'city' | 'county' | 'state', string> = {
-  city: 'bg-gray-100 text-gray-500',
-  county: 'bg-purple-50 text-purple-600',
-  state: 'bg-blue-50 text-blue-600',
+  city:   'bg-neutral-100 text-neutral-600',
+  county: 'bg-neutral-100 text-neutral-600',
+  state:  'bg-neutral-100 text-neutral-600',
 }
 
 // Icon components — aria-hidden because the pill text carries the meaning
@@ -53,32 +55,23 @@ function NeutralIcon() {
   )
 }
 
-// Derive a visual status style from the rule's value text.
-// Returns a pill class and a shape icon — both matter for color-blind users.
+// Rule value pills use neutral styling — status colors are reserved for STR legality only.
+// Icon shape (not color) is the primary differentiator.
 function getValueStyle(value: string): { pill: string; icon: React.ReactNode } {
   const v = value.toLowerCase()
-  if (
-    v.includes('not allowed') ||
-    v.includes('not eligible') ||
-    v.includes('no permit')
-  ) {
-    return { pill: 'bg-red-50 text-red-700', icon: <XIcon /> }
+  if (v.includes('not allowed') || v.includes('not eligible') || v.includes('no permit')) {
+    return { pill: 'bg-neutral-100 text-neutral-700', icon: <XIcon /> }
   }
   if (v.includes('not required')) {
-    return { pill: 'bg-green-50 text-green-700', icon: <CheckIcon /> }
+    return { pill: 'bg-neutral-100 text-neutral-700', icon: <CheckIcon /> }
   }
-  if (
-    v.includes('required') ||
-    v.includes('conditional') ||
-    v.includes('applies') ||
-    v.includes('varies')
-  ) {
-    return { pill: 'bg-amber-50 text-amber-700', icon: <WarningIcon /> }
+  if (v.includes('required') || v.includes('conditional') || v.includes('applies') || v.includes('varies')) {
+    return { pill: 'bg-neutral-100 text-neutral-700', icon: <WarningIcon /> }
   }
   if (v.includes('allowed') || v.includes('eligible')) {
-    return { pill: 'bg-green-50 text-green-700', icon: <CheckIcon /> }
+    return { pill: 'bg-neutral-100 text-neutral-700', icon: <CheckIcon /> }
   }
-  return { pill: 'bg-gray-100 text-gray-600', icon: <NeutralIcon /> }
+  return { pill: 'bg-neutral-100 text-neutral-600', icon: <NeutralIcon /> }
 }
 
 function ExternalLinkIcon({ className }: { className?: string }) {
@@ -105,11 +98,11 @@ export default function RuleCard({ rule, lastReviewedAt, allSources }: Props) {
         {/* Top row: label + jurisdiction tag (left) / status badge (right) */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-2 mt-0.5">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-gray-400">
               {rule.label}
             </p>
             {rule.jurisdictionLevel && (
-              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${jurisdictionStyles[rule.jurisdictionLevel]}`}>
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide ${jurisdictionStyles[rule.jurisdictionLevel]}`}>
                 {rule.jurisdictionLevel}
               </span>
             )}
@@ -136,7 +129,7 @@ export default function RuleCard({ rule, lastReviewedAt, allSources }: Props) {
                 href={rule.codeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-orange-700 hover:text-orange-800 font-medium transition-colors"
+                className="inline-flex items-center gap-1 text-xs text-accent-500 hover:text-accent-700 font-medium transition-colors"
               >
                 <ExternalLinkIcon />
                 {rule.codeRef}
@@ -180,9 +173,9 @@ export default function RuleCard({ rule, lastReviewedAt, allSources }: Props) {
               rel="noopener noreferrer"
               className="flex items-start gap-2 group"
             >
-              <ExternalLinkIcon className="h-3 w-3 mt-0.5 flex-shrink-0 text-gray-400 group-hover:text-orange-700 transition-colors" />
+              <ExternalLinkIcon className="h-3 w-3 mt-0.5 flex-shrink-0 text-gray-400 group-hover:text-accent-500 transition-colors" />
               <span className="text-xs">
-                <span className="text-gray-700 group-hover:text-orange-700 font-medium transition-colors">{s.title}</span>
+                <span className="text-gray-700 group-hover:text-accent-500 font-medium transition-colors">{s.title}</span>
                 {s.publisher && <span className="text-gray-400 ml-1">· {s.publisher}</span>}
               </span>
               <span className="sr-only">(opens in new tab)</span>
@@ -190,7 +183,7 @@ export default function RuleCard({ rule, lastReviewedAt, allSources }: Props) {
           ))}
 
           {supplemental.length > 0 && (rule.sources?.length ?? 0) > 0 && (
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 pt-1">
+            <p className="text-[10px] font-medium uppercase tracking-widest text-gray-400 pt-1">
               Additional market sources
             </p>
           )}
@@ -203,9 +196,9 @@ export default function RuleCard({ rule, lastReviewedAt, allSources }: Props) {
               rel="noopener noreferrer"
               className="flex items-start gap-2 group"
             >
-              <ExternalLinkIcon className="h-3 w-3 mt-0.5 flex-shrink-0 text-gray-400 group-hover:text-orange-700 transition-colors" />
+              <ExternalLinkIcon className="h-3 w-3 mt-0.5 flex-shrink-0 text-gray-400 group-hover:text-accent-500 transition-colors" />
               <span className="text-xs">
-                <span className="text-gray-700 group-hover:text-orange-700 font-medium transition-colors">{s.title}</span>
+                <span className="text-gray-700 group-hover:text-accent-500 font-medium transition-colors">{s.title}</span>
                 {s.publisher && <span className="text-gray-400 ml-1">· {s.publisher}</span>}
               </span>
               <span className="sr-only">(opens in new tab)</span>

@@ -30,26 +30,26 @@ export default async function AuthErrorPage({
   searchParams: Promise<{ error?: string }>
 }) {
   const { error } = await searchParams
-  const { heading, body } = (error && MESSAGES[error]) ?? DEFAULT_MESSAGE
+  const { heading, body } = (error ? MESSAGES[error] : undefined) ?? DEFAULT_MESSAGE
 
   return (
     <div className="max-w-sm mx-auto px-6 py-20">
       <div className="mb-8 text-center">
         <Link
           href="/"
-          className="text-base font-bold text-gray-100 hover:text-indigo-400 transition-colors"
+          className="text-base font-medium text-gray-100 hover:text-accent-500 transition-colors"
         >
           STR Comply
         </Link>
         <div className="mt-6 text-3xl">⚠</div>
-        <h1 className="mt-3 text-xl font-semibold text-gray-100">{heading}</h1>
+        <h1 className="mt-3 text-xl font-medium text-gray-100">{heading}</h1>
         <p className="mt-2 text-sm text-gray-500">{body}</p>
       </div>
 
       <div className="flex flex-col gap-3">
         <Link
           href="/login"
-          className="w-full text-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
+          className="w-full text-center rounded-lg bg-accent-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-accent-700 transition-colors"
         >
           Request a new sign-in link
         </Link>

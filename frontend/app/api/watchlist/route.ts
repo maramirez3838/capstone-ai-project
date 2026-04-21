@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json(
-      items.map((item) => ({
+      items.map((item: (typeof items)[number]) => ({
         marketSlug: item.market.slug,
         savedAt: item.createdAt.toISOString(),
         market: {

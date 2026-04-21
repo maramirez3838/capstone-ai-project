@@ -73,7 +73,7 @@ export default async function MarketPage({
     notableRestrictions: raw.notableRestrictions ?? undefined,
     lastReviewedAt: raw.lastReviewedAt.toISOString(),
     aliases: [], // FE-only field; not stored on BE Market
-    rules: raw.rules.map((r) => ({
+    rules: raw.rules.map((r: (typeof raw.rules)[number]) => ({
       ruleKey: r.ruleKey,
       label: r.label,
       value: r.value,
@@ -82,7 +82,7 @@ export default async function MarketPage({
       codeUrl: r.codeUrl ?? undefined,
       displayOrder: r.displayOrder,
       jurisdictionLevel: r.jurisdictionLevel as Market['rules'][number]['jurisdictionLevel'],
-      sources: r.linkedSources.map((ls) => ({
+      sources: r.linkedSources.map((ls: (typeof r.linkedSources)[number]) => ({
         id: ls.source.id,
         title: ls.source.title,
         url: ls.source.url,
@@ -91,7 +91,7 @@ export default async function MarketPage({
         displayOrder: ls.source.displayOrder,
       })),
     })),
-    sources: raw.sources.map((s) => ({
+    sources: raw.sources.map((s: (typeof raw.sources)[number]) => ({
       id: s.id,
       title: s.title,
       url: s.url,
@@ -123,7 +123,7 @@ export default async function MarketPage({
 
       {/* Market header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{market.name}</h1>
+        <h1 className="text-3xl font-medium text-gray-900 tracking-tight">{market.name}</h1>
         <p className="text-gray-500 mt-1 text-sm">
           {market.countyName}
           {market.regionLabel && <span> · {market.regionLabel}</span>}
@@ -138,7 +138,7 @@ export default async function MarketPage({
       {market.rules.length > 0 && (
         <div className="mt-10">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-gray-900">Rule Breakdown</h2>
+            <h2 className="text-base font-medium text-gray-900">Rule Breakdown</h2>
             <span className="text-xs text-gray-400">
               {market.rules.length} rule{market.rules.length !== 1 ? 's' : ''}
             </span>
@@ -158,7 +158,7 @@ export default async function MarketPage({
 
       {/* Source documents */}
       <div className="mt-10">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
+        <h2 className="text-xs font-medium uppercase tracking-widest text-gray-400 mb-3">
           Source Documents
         </h2>
         <SourceList sources={market.sources} marketSlug={market.slug} />
@@ -168,7 +168,7 @@ export default async function MarketPage({
       <div className="mt-6">
         <FreshnessBadge status={market.freshnessStatus} lastReviewedAt={market.lastReviewedAt} />
         {market.freshnessStatus === 'needs_review' && (
-          <p className="mt-3 text-sm text-orange-700 bg-orange-50 border border-orange-100 rounded-xl px-4 py-3">
+          <p className="mt-3 text-sm text-neutral-600 bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3">
             This summary is overdue for verification. Do not rely on it for active
             underwriting — check the source documents above before making any decisions.
           </p>

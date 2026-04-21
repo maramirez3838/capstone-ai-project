@@ -7,15 +7,15 @@ interface Props {
 }
 
 const styles: Record<StrStatus, string> = {
-  allowed: 'bg-green-50 text-green-700 border border-green-200',
-  conditional: 'bg-amber-50 text-amber-700 border border-amber-200',
-  not_allowed: 'bg-red-50 text-red-700 border border-red-200',
+  allowed:     'bg-status-allowed-bg text-status-allowed-text border border-status-allowed-border',
+  conditional: 'bg-status-conditional-bg text-status-conditional-text border border-status-conditional-border',
+  not_allowed: 'bg-status-not-allowed-bg text-status-not-allowed-text border border-status-not-allowed-border',
 }
 
 const sizes = {
   sm: 'px-2.5 py-0.5 text-xs',
   md: 'px-3 py-1 text-sm',
-  lg: 'px-4 py-1.5 text-base font-semibold',
+  lg: 'px-4 py-1.5 text-base font-medium',
 }
 
 // Shape icons — provide a non-color differentiator for color-blind users.

@@ -16,11 +16,24 @@ export default function WatchlistButton({ marketSlug, marketName, compact = fals
   const { isSignedIn, mounted: authMounted } = useAuth()
   const { isSaved, save, remove, isAtLimit, mounted: watchlistMounted } = useWatchlist()
 
-  // Compact (card) mode — skips auth, works on watchlist directly
+  // Compact (card) mode — minimal Save/Saved toggle inside the compliance card
   if (compact) {
-    if (!watchlistMounted) {
+    if (!authMounted || !watchlistMounted) {
       return <div className="h-7 w-16 animate-pulse rounded-lg bg-gray-200" />
     }
+
+    if (!isSignedIn) {
+      return (
+        <button
+          onClick={() => router.push(`/login?returnTo=/market/${marketSlug}`)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:border-gray-400 transition-colors"
+        >
+          <BookmarkIcon filled={false} />
+          Save
+        </button>
+      )
+    }
+
     const saved = isSaved(marketSlug)
     return (
       <button
@@ -59,7 +72,7 @@ export default function WatchlistButton({ marketSlug, marketName, compact = fals
   if (saved) {
     return (
       <div className="inline-flex items-center gap-3">
-        <span className="inline-flex items-center gap-1.5 rounded-lg bg-orange-50 border border-orange-200 px-4 py-2 text-sm font-medium text-orange-600">
+        <span className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-100 border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-600">
           <BookmarkIcon filled={true} />
           Tracking
         </span>

@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import { SessionProvider } from 'next-auth/react'
+import './tokens.css'
 import './globals.css'
 import Nav from '@/components/Nav'
-
-const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'STR Comply — Short-Term Rental Compliance',
@@ -19,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-white text-gray-900 antialiased`}>
+      <body className="bg-white text-gray-900 antialiased">
         <SessionProvider>
           <Nav />
           <main>{children}</main>

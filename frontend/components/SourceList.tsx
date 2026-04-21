@@ -29,7 +29,7 @@ export default function SourceList({ sources, marketSlug }: Props) {
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 flex-shrink-0 text-gray-300 group-hover:text-orange-400 transition-colors"
+              className="h-4 w-4 flex-shrink-0 text-gray-300 group-hover:text-accent-500 transition-colors"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"

@@ -16,6 +16,7 @@ update this table before anything else.
 | SRD | `Reference Artifacts/STR_Comply_SRD_v1.4.md` | v1.4 | MarketSource schema expanded (sourceStatus, brokenSince, discoveryAttempts, replacesId); section 15A expanded (source discovery + approval flow); new API endpoint /api/admin/approve-source; new lib files documented; project structure and DoD checklist updated |
 | ICP | `Reference Artifacts/STR_Comply_ICP_v1.0.md` | v1.0 | Ideal client profile and Marcus Chen persona |
 | Accessibility Spec | `Reference Artifacts/STR_Comply_AccessibilitySpec_v1.0.md` | v1.0 | WCAG 2.1 AA implementation spec; component-level criteria and dev checklist |
+| Design System | `Reference Artifacts/STR_Comply_DesignSystem_v1.0.md` | v1.0 | Token definitions, component patterns, color palette, typography, anti-patterns — load into context for all UI work |
 
 New versions are only created when scope changes. Until then, the files above are the source of truth.
 
@@ -61,7 +62,7 @@ indicators, and a saved market watchlist.
 This is NOT a chat product. It is NOT an AI answer engine. Compliance summaries are
 pre-written, human-reviewed content stored in the database — not generated at runtime.
 
-See @docs/lessons.md for rules learned during this build.
+See @lessons.md for rules learned during this build.
 
 ---
 
@@ -69,13 +70,13 @@ See @docs/lessons.md for rules learned during this build.
 
 - PM / FE lead: building UI and backend locally
 - Group partners: collaborating via GitHub
-- Current phase: **Backend wired — auth is next**
+- Current phase: **Auth complete — tests and README are next**
 
 **Phase summary:**
 - UI-first phase: complete. Frontend components, pages, and mock data are done.
 - Backend phase: complete. Prisma 7 + Neon DB wired, all API routes live, 5 LA-area markets seeded.
-- Auth phase: in progress. NextAuth magic link with Resend is the chosen approach.
-  Only `frontend/lib/session.ts` needs to change — all 3 watchlist routes will activate automatically once `requireSession()` returns a real session.
+- Auth phase: complete. NextAuth v5 + Resend magic link wired. Custom `PrismaRawAdapter` in `lib/auth-adapter.ts`. All 3 watchlist routes are auth-gated.
+- Compliance monitor phase: complete. Background agent built (off by default via `COMPLIANCE_MONITOR_ENABLED`). Source discovery agent and HMAC approval flow both shipped.
 
 **Key CLI commands (Prisma 7 requires manual DATABASE_URL prefix):**
 ```bash
@@ -100,6 +101,8 @@ npm run dev
 - `tsx` — seed script runtime
 - PostgreSQL via **Neon** (confirmed host)
 - NextAuth / Auth.js — email magic link; **Resend** is the chosen email provider
+- `@anthropic-ai/sdk` — used by compliance monitor agent only; not in the core user-facing request path
+- `resend` npm package — used by compliance monitor for summary emails (distinct from the Resend NextAuth provider)
 - Vercel — app hosting target
 - Telemetry events logged to Postgres
 
@@ -123,23 +126,35 @@ npm run dev
     /data/
       markets.ts             ← canonical typed seed data; edit here to add/update markets
   /frontend/
+    auth.ts                  ← NextAuth v5 config (Resend provider + PrismaRawAdapter)
     prisma.config.ts         ← Prisma 7 DB config (adapter + migrate settings)
+    vercel.json              ← Vercel cron schedule (compliance monitor, Mon 9am UTC)
     /prisma/
-      schema.prisma          ← 7 DB tables
+      schema.prisma          ← 11 DB tables incl. NextAuth models + compliance monitor fields
       seed.ts                ← imports from backend/data/markets.ts and seeds DB
       /migrations/           ← committed migration history
     /lib/
       db.ts                  ← Prisma client singleton (server-only)
-      session.ts             ← auth placeholder — returns null → 401; replace when NextAuth added
+      session.ts             ← requireSession() — enforces auth on watchlist API routes
+      auth-adapter.ts        ← custom NextAuth adapter using $queryRaw (replaces @auth/prisma-adapter)
+      approval-token.ts      ← HMAC-SHA256 sign/verify for source approval email links (24h TTL)
+      compliance-monitor.ts  ← compliance monitor agent core logic
+      source-discoverer.ts   ← source discovery agent — Sonnet + web_search + Haiku validation gate
+    /scripts/
+      run-compliance-monitor.ts  ← local runner for compliance agent (loads .env.local)
+      discover-sources.ts        ← on-demand CLI for single-market source discovery
+      /discovery-output/         ← gitignored output directory for CLI discovery runs
     /app/
       /api/
-        /search/route.ts
-        /markets/[slug]/route.ts
-        /telemetry/route.ts
-        /watchlist/route.ts           ← GET + POST
-        /watchlist/[marketSlug]/route.ts  ← DELETE
-/docs
-  lessons.md             ← error log and learned rules
+        /auth/[...nextauth]/route.ts      ← NextAuth route handler
+        /search/route.ts                  ← GET /api/search
+        /markets/[slug]/route.ts          ← GET /api/markets/:slug
+        /telemetry/route.ts               ← POST /api/telemetry
+        /watchlist/route.ts               ← GET + POST /api/watchlist
+        /watchlist/[marketSlug]/route.ts  ← DELETE /api/watchlist/:marketSlug
+        /cron/compliance-monitor/route.ts ← GET /api/cron/compliance-monitor (Vercel cron)
+        /admin/approve-source/route.ts    ← POST /api/admin/approve-source?token=...
+lessons.md             ← error log and learned rules (project root)
 ```
 
 ---
@@ -209,7 +224,7 @@ safety requirement, not a style preference.
 ## What is explicitly out of scope — do not build
 
 - Runtime AI generation of compliance summaries
-- Automated scraping or change monitoring
+- Automated scraping or change monitoring — **Note:** a backend compliance monitor agent has been built as a maintainer tool (off by default via `COMPLIANCE_MONITOR_ENABLED`). User-facing change alerts remain out of scope.
 - Permit application workflows
 - Alerts or notifications
 - Payments or subscriptions

@@ -24,6 +24,18 @@
 
 ## UI and components
 
+### [2026-04-19] FreshnessBadge used a colored dot with no shape differentiator
+**Rule:** The FreshnessBadge dot (`w-2 h-2 rounded-full`) violates the shape-icon rule even though it has a text label alongside it. All freshness indicators must use a named SVG icon (check for fresh, warning triangle for review_due, X for needs_review) in addition to the token color. The generic color-only rule in this section applies to freshness specifically — do not use a dot as the only visual differentiator.
+
+### [2026-04-19] WatchlistButton compact mode skipped auth check, silently failing for logged-out users
+**Rule:** When `WatchlistButton` is rendered in `compact` mode (inside ComplianceSummaryCard), it MUST still check auth state and redirect unauthenticated users to `/login?returnTo=/market/[slug]`. Never skip auth checks in a component just because it is in a smaller visual variant. Silent no-ops after a user action (click → 401 → nothing visible) are a broken UX pattern — always surface a login prompt or an error.
+
+### [2026-04-19] Dark-themed pages float on white background because root layout sets `bg-white`
+**Rule:** The root layout (`app/layout.tsx`) applies `bg-white` globally. Any page that uses a dark design (bg-gray-900 containers, dark text, dark borders) MUST wrap its content in `<div className="min-h-screen bg-gray-950">` so the dark chrome sits on a matching dark background instead of floating on white. The skeleton loading state must use a lighter shade than the page background (e.g. `bg-gray-800` on `bg-gray-950`).
+
+### [2026-04-19] Search placeholder promised address-level lookup the product doesn't support
+**Rule:** Never write placeholder or hint copy that implies finer resolution than the product can deliver. STR Comply resolves to market names and aliases only. The placeholder must say "Enter a city or market name" — never "Enter an address or city" or include address examples like "123 Main St". Address-like inputs degrade gracefully (FR-6) but the UI must not advertise that capability.
+
 ### [2026-04-13] Color-only status indicators fail WCAG AA for color-blind users
 **Rule:** Every status badge (STR eligibility, rule value, freshness) must use a shape icon in addition to color. A colored dot alone is not sufficient — ~8% of male users have red-green color deficiency and cannot distinguish green from amber or red. Use checkmark (✓), warning triangle (⚠), and X circle (✕) SVG icons. Icons must be `aria-hidden="true" focusable="false"` since the text label carries the semantic meaning.
 
@@ -114,6 +126,20 @@ The dev server (`npm run dev`) reads `.env.local` automatically, so API routes w
 
 ---
 
+## AI agents and SDK
+
+### [2026-04-18] Claude emits intermediate text blocks before the final JSON array in tool-use responses
+**Rule:** When prompting Claude to return a JSON array (e.g. source discovery candidates), Claude may emit one or more text blocks of reasoning prose *before* the block containing the JSON. A parser that stops at the first text block will miss the array entirely. Always loop over **all** text blocks in the response and apply `/\[[\s\S]*\]/` regex to each one to extract the JSON — do not stop at index 0. See `lib/source-discoverer.ts` for the reference implementation.
+
+---
+
 ## Scope and over-building
 
 *(No rules logged yet.)*
+
+---
+
+## Reference artifacts
+
+### [2026-04-19] Design system document created
+**Rule:** `STR_Comply_DesignSystem_v1.0.md` exists in `Reference Artifacts/` and is the single source of truth for tokens, component patterns, and visual rules. Load it into context whenever Claude Code works on any UI component, page layout, or styling decision.

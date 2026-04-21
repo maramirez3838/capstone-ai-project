@@ -15,8 +15,8 @@ export default function Nav() {
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="text-base font-semibold text-gray-900 tracking-tight">STR Comply</span>
-          <span className="text-[10px] font-bold uppercase tracking-widest bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">
+          <span className="text-base font-medium text-gray-900 tracking-tight">STR Comply</span>
+          <span className="text-[10px] font-medium uppercase tracking-widest bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full">
             BETA
           </span>
         </Link>
@@ -46,7 +46,7 @@ export default function Nav() {
             {mounted && entries.length > 0 && (
               <span
                 aria-label={`${entries.length} saved market${entries.length !== 1 ? 's' : ''}`}
-                className={`text-[11px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ${
+                className={`text-[11px] font-medium rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ${
                   pathname === '/watchlist'
                     ? 'bg-white text-gray-900'
                     : 'bg-gray-900 text-white'
@@ -74,7 +74,7 @@ export default function Nav() {
             ) : (
               <Link
                 href="/login"
-                className="ml-2 px-4 py-1.5 rounded-full text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
+                className="ml-2 px-4 py-1.5 rounded-full text-sm font-medium bg-accent-500 text-white hover:bg-accent-700 transition-colors"
               >
                 Sign in
               </Link>
