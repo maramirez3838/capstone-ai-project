@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import ComplianceSummaryCard from '@/components/ComplianceSummaryCard'
-import RuleCard from '@/components/RuleCard'
+import RuleList from '@/components/RuleList'
 import SourceList from '@/components/SourceList'
 import FreshnessBadge from '@/components/FreshnessBadge'
 import WatchlistButton from '@/components/WatchlistButton'
@@ -82,6 +83,7 @@ export default async function MarketPage({
       codeUrl: r.codeUrl ?? undefined,
       displayOrder: r.displayOrder,
       jurisdictionLevel: r.jurisdictionLevel as Market['rules'][number]['jurisdictionLevel'],
+      applicableTo: r.applicableTo as Market['rules'][number]['applicableTo'],
       sources: r.linkedSources.map((ls: (typeof r.linkedSources)[number]) => ({
         id: ls.source.id,
         title: ls.source.title,
@@ -89,6 +91,7 @@ export default async function MarketPage({
         sourceType: ls.source.sourceType as Market['sources'][number]['sourceType'],
         publisher: ls.source.publisher ?? undefined,
         displayOrder: ls.source.displayOrder,
+        sourceStatus: ls.source.sourceStatus,
       })),
     })),
     sources: raw.sources.map((s: (typeof raw.sources)[number]) => ({
@@ -98,6 +101,7 @@ export default async function MarketPage({
       sourceType: s.sourceType as Market['sources'][number]['sourceType'],
       publisher: s.publisher ?? undefined,
       displayOrder: s.displayOrder,
+      sourceStatus: s.sourceStatus,
     })),
   }
 
@@ -134,25 +138,31 @@ export default async function MarketPage({
       {/* Compliance summary */}
       <ComplianceSummaryCard market={market} />
 
-      {/* Rule breakdown */}
+      {/* Rule breakdown with STR type toggle */}
       {market.rules.length > 0 && (
         <div className="mt-10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-medium text-gray-900">Rule Breakdown</h2>
-            <span className="text-xs text-gray-400">
-              {market.rules.length} rule{market.rules.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-          <div className="divide-y divide-gray-100 rounded-2xl border border-gray-100 overflow-hidden">
-            {market.rules.map((rule) => (
-              <RuleCard
-                key={rule.ruleKey}
-                rule={rule}
-                lastReviewedAt={market.lastReviewedAt}
-                allSources={market.sources}
-              />
-            ))}
-          </div>
+          <Suspense
+            fallback={
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-medium text-gray-900">Rule Breakdown</h2>
+                </div>
+                <div className="divide-y divide-gray-100 rounded-2xl border border-gray-100 overflow-hidden animate-pulse">
+                  {market.rules.map((rule) => (
+                    <div key={rule.ruleKey} className="px-5 py-4 bg-white">
+                      <div className="h-3 bg-gray-100 rounded w-1/3" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            }
+          >
+            <RuleList
+              rules={market.rules}
+              lastReviewedAt={market.lastReviewedAt}
+              allSources={market.sources}
+            />
+          </Suspense>
         </div>
       )}
 

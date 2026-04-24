@@ -111,6 +111,7 @@ model Market {
   sources                MarketSource[]
   watchlistItems         WatchlistItem[]
   telemetry              TelemetryEvent[]
+  properties             Property[]
 }
 
 // ---------------------------------------------------------------------------
@@ -149,6 +150,8 @@ model MarketRule {
   displayOrder      Int      @default(0)
   // jurisdictionLevel: "city" | "county" | "state" — nullable, not all rules have a level
   jurisdictionLevel String?
+  // applicableTo: "str_full" | "home_sharing" | "both" — powers the home sharing / full STR toggle
+  applicableTo      String   @default("both")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -205,6 +208,31 @@ model MarketRuleSource {
 
   @@unique([ruleId, sourceId])
   @@index([ruleId])
+}
+
+// ---------------------------------------------------------------------------
+// Property
+// Shared geocoding cache. One row per unique normalized address (Mapbox place_name).
+// When any user searches an address, the geocoded result is stored here so all
+// subsequent searches for the same address skip the Mapbox API call entirely.
+// marketId is null when the address falls outside all supported jurisdictions.
+// ---------------------------------------------------------------------------
+model Property {
+  id          String   @id @default(cuid())
+  address     String   @unique  // normalized place_name from Mapbox — canonical cache key
+  latitude    Float
+  longitude   Float
+  city        String?
+  stateCode   String?
+  countyName  String?
+  postalCode  String?
+  marketId    String?           // null = unsupported jurisdiction
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  market      Market?  @relation(fields: [marketId], references: [id])
+
+  @@index([city, stateCode])
 }
 
 // ---------------------------------------------------------------------------

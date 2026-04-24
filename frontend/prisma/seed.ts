@@ -87,6 +87,7 @@ async function main() {
           codeUrl: rule.codeUrl,
           displayOrder: rule.displayOrder,
           jurisdictionLevel: rule.jurisdictionLevel,
+          applicableTo: rule.applicableTo ?? 'both',
         })),
       })
     }

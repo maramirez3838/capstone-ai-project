@@ -22,6 +22,22 @@
 
 ---
 
+## Testing
+
+### [2026-04-23] Tests and documentation were not written alongside Sprint 3 and 4 features
+**Rule:** Every sprint must ship tests alongside the feature code — no exceptions. For each new route, create `__tests__/api/<route>.test.ts`. For each new agent, create `__tests__/agents/<agent>.test.ts`. For each new utility, create `__tests__/unit/<util>.test.ts`. Update `docs/testing.md` inventory table when adding new test files. Run `npm test` and confirm all cases pass before calling a sprint done.
+
+### [2026-04-23] Anthropic SDK mock used arrow function — `new Anthropic()` failed as constructor
+**Rule:** When mocking `@anthropic-ai/sdk` in Vitest, the `default` export mock must use a regular `function` (not an arrow function) so `new Anthropic()` works as a constructor. Use: `vi.fn(function () { return { messages: { create: mockCreate } } })`. Arrow functions cannot be used as constructors and will throw at test runtime.
+
+### [2026-04-23] Prisma mock type cast required `as unknown as` to avoid TS2352
+**Rule:** When casting the mocked `db` to a partial test shape, always use `db as unknown as { ... }` (two-step cast through `unknown`). A direct `db as { ... }` cast fails TS2352 because `PrismaClient` and the mock shape have no type overlap.
+
+### [2026-04-23] `z.coerce.number()` converts empty string to 0 — "missing param" tests expect wrong status
+**Rule:** `z.coerce.number()` applied to `''` (what `searchParams.get('missing') ?? ''` returns) produces `0`, which is a valid number — validation passes. Do not write test cases asserting 400 for a missing numeric param; write them asserting 400 for a non-numeric value (e.g. `'not-a-number'`) instead.
+
+---
+
 ## UI and components
 
 ### [2026-04-19] FreshnessBadge used a colored dot with no shape differentiator
@@ -70,6 +86,9 @@
 ---
 
 ## Backend and database
+
+### [2026-04-21] Dev server started before a Prisma migration causes 500s and stale IDE types
+**Rule:** After running `prisma migrate dev` (adding a new model or column), always restart the Next.js dev server AND run `npx prisma generate` before testing. The running process holds the old `PrismaClient` in memory via the `globalThis` singleton — new model accessors like `db.property` will throw at runtime even though the migration succeeded. `prisma generate` also clears the IDE TypeScript server's stale type errors for the new model.
 
 ### [2026-04-17] `@auth/prisma-adapter` is incompatible with Prisma 7 + `@prisma/adapter-pg`
 **Rule:** When using Prisma 7 with a driver adapter (`@prisma/adapter-pg`), model property accessors like `prisma.verificationToken` return `undefined`. `@auth/prisma-adapter` calls these at runtime and throws `Cannot read properties of undefined (reading 'create')`. The fix is a custom adapter in `lib/auth-adapter.ts` that uses `db.$queryRaw` / `db.$executeRaw` exclusively. Never use `@auth/prisma-adapter` with Prisma 7 + driver adapter.

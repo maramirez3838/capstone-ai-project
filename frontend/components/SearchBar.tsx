@@ -6,6 +6,37 @@ import { resolveSearch, getMarketBySlug } from '@/lib/search'
 import { logEvent } from '@/lib/telemetry'
 import type { Market } from '@/types/market'
 
+// Lazy-import the Mapbox SearchBox so the bundle doesn't fail when the package
+// isn't installed yet. The token check below gates the actual render.
+let SearchBox: React.ComponentType<MapboxSearchBoxProps> | null = null
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  SearchBox = require('@mapbox/search-js-react').SearchBox
+} catch {
+  // Package not installed — address autofill is disabled; plain input is used instead.
+}
+
+interface MapboxSearchBoxProps {
+  accessToken: string
+  value?: string
+  onChange?: (value: string) => void
+  onRetrieve?: (result: MapboxRetrieveResult) => void
+  options?: { country?: string; types?: string }
+  placeholder?: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  theme?: Record<string, any>
+}
+
+interface MapboxRetrieveResult {
+  features: Array<{
+    properties: {
+      full_address?: string
+      place_formatted?: string
+      name?: string
+    }
+  }>
+}
+
 interface Props {
   // When provided, results are returned inline instead of navigating.
   // The homepage uses this to display results on the same page.
@@ -17,17 +48,18 @@ interface Props {
 export default function SearchBar({
   onSearch,
   autoFocus = false,
-  placeholder = 'Enter a city or market name — try "Santa Monica" or "West Hollywood"',
+  placeholder = 'Enter a city, address, or market name',
 }: Props) {
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  async function handleSubmit(e: React.SyntheticEvent) {
-    e.preventDefault()
-    const trimmed = query.trim()
+  const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+  const mapboxEnabled = Boolean(mapboxToken && SearchBox)
 
+  async function handleSearchQuery(value: string) {
+    const trimmed = value.trim()
     if (!trimmed) {
       setError('Enter a city, market, or property address.')
       return
@@ -42,14 +74,12 @@ export default function SearchBar({
 
       if (result.type === 'supported') {
         if (onSearch) {
-          // Inline mode: fetch full market data, then pass to parent
           const market = await getMarketBySlug(result.market.slug)
           onSearch(market, trimmed)
         } else {
           router.push(`/market/${result.market.slug}`)
         }
       } else {
-        // Unsupported market
         if (onSearch) {
           onSearch(null, trimmed)
         } else {
@@ -61,6 +91,23 @@ export default function SearchBar({
     } finally {
       setIsLoading(false)
     }
+  }
+
+  async function handleSubmit(e: React.SyntheticEvent) {
+    e.preventDefault()
+    await handleSearchQuery(query)
+  }
+
+  // When the user selects an address suggestion from Mapbox, auto-submit
+  function handleMapboxRetrieve(result: MapboxRetrieveResult) {
+    const feature = result.features[0]
+    const address =
+      feature?.properties?.full_address ??
+      feature?.properties?.place_formatted ??
+      feature?.properties?.name ??
+      query
+    setQuery(address)
+    handleSearchQuery(address)
   }
 
   return (
@@ -83,24 +130,53 @@ export default function SearchBar({
           </svg>
         </div>
 
-        <input
-          id="market-search"
-          type="search"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value)
-            if (error) setError('')
-          }}
-          placeholder={placeholder}
-          aria-describedby="search-hint search-error"
-          aria-invalid={error ? 'true' : 'false'}
-          aria-required="true"
-          autoComplete="off"
-          spellCheck={false}
-          autoFocus={autoFocus}
-          disabled={isLoading}
-          className="flex-1 py-4 text-base text-gray-900 placeholder-gray-500 bg-transparent focus:outline-none disabled:opacity-60"
-        />
+        {mapboxEnabled && SearchBox ? (
+          // Mapbox address autofill — active when NEXT_PUBLIC_MAPBOX_TOKEN is set
+          <div className="flex-1 py-1">
+            <SearchBox
+              accessToken={mapboxToken!}
+              value={query}
+              onChange={(val: string) => {
+                setQuery(val)
+                if (error) setError('')
+              }}
+              onRetrieve={handleMapboxRetrieve}
+              options={{ country: 'us', types: 'address,place' }}
+              placeholder={placeholder}
+              theme={{
+                variables: {
+                  // Strip Mapbox's own container styling — our outer div handles it
+                  boxShadow: 'none',
+                  border: 'none',
+                  borderRadius: '0',
+                  fontFamily: 'inherit',
+                  fontSize: '1rem',
+                  colorBackground: 'transparent',
+                },
+              }}
+            />
+          </div>
+        ) : (
+          // Plain input — used when Mapbox token is not configured
+          <input
+            id="market-search"
+            type="search"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              if (error) setError('')
+            }}
+            placeholder={placeholder}
+            aria-describedby="search-hint search-error"
+            aria-invalid={error ? 'true' : 'false'}
+            aria-required="true"
+            autoComplete="off"
+            spellCheck={false}
+            autoFocus={autoFocus}
+            disabled={isLoading}
+            className="flex-1 py-4 text-base text-gray-900 placeholder-gray-500 bg-transparent focus:outline-none disabled:opacity-60"
+          />
+        )}
 
         <div className="pr-2 flex-shrink-0">
           <button
@@ -116,7 +192,9 @@ export default function SearchBar({
 
       {/* Hint text — always in DOM, referenced by aria-describedby */}
       <p id="search-hint" className="mt-4 text-sm text-gray-400 pl-1">
-        Try a city or market name — e.g. &ldquo;Santa Monica&rdquo; or &ldquo;West Hollywood&rdquo;
+        {mapboxEnabled
+          ? 'Try a city, address, or market name — e.g. \u201c1234 Ocean Ave, Santa Monica\u201d'
+          : 'Try a city or market name — e.g. \u201cSanta Monica\u201d or \u201cWest Hollywood\u201d'}
       </p>
 
       {/* Error — always in DOM, empty when no error; role="alert" announces immediately */}

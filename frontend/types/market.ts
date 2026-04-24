@@ -15,6 +15,8 @@ export interface MarketRule {
   codeRef?: string   // e.g. "SMMC § 6.20.010"
   codeUrl?: string   // link to the cited code section, if available
   jurisdictionLevel?: 'city' | 'county' | 'state'  // which level of government mandates this rule
+  // "str_full" | "home_sharing" | "both" — used by the STR type toggle to filter displayed rules
+  applicableTo?: 'str_full' | 'home_sharing' | 'both'
   sources?: MarketSource[]  // source documents explicitly linked to this rule via join table
 }
 
@@ -25,6 +27,8 @@ export interface MarketSource {
   sourceType: 'official_program_page' | 'municipal_code' | 'tax_registration' | 'city_ordinance' | 'other'
   publisher?: string
   displayOrder?: number
+  // "active" | "broken" | "pending_review" | "replaced" — set by compliance monitor
+  sourceStatus?: string
 }
 
 export interface Market {
@@ -65,4 +69,17 @@ export type SearchResponse = SearchResult | UnsupportedResult
 export interface WatchlistEntry {
   marketSlug: string
   savedAt: string // ISO 8601
+}
+
+// Geocoded address cache entry (shared across all users)
+export interface Property {
+  id: string
+  address: string        // normalized Mapbox place_name — canonical cache key
+  latitude: number
+  longitude: number
+  city: string | null
+  stateCode: string | null
+  countyName: string | null
+  postalCode: string | null
+  marketId: string | null  // null = address is in an unsupported jurisdiction
 }

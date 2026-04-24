@@ -26,7 +26,7 @@ import { GET, POST } from '@/app/api/watchlist/route'
 import { db } from '@/lib/db'
 import { requireSession } from '@/lib/session'
 
-const mockDb = db as {
+const mockDb = db as unknown as {
   market: { findUnique: ReturnType<typeof vi.fn> }
   watchlistItem: { findMany: ReturnType<typeof vi.fn>; upsert: ReturnType<typeof vi.fn> }
 }

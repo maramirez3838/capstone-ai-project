@@ -24,7 +24,7 @@ vi.mock('@/lib/db', () => ({
 import { GET } from '@/app/api/search/route'
 import { db } from '@/lib/db'
 
-const mockDb = db as {
+const mockDb = db as unknown as {
   market: { findUnique: ReturnType<typeof vi.fn>; findFirst: ReturnType<typeof vi.fn> }
   marketAlias: { findFirst: ReturnType<typeof vi.fn> }
 }
@@ -46,8 +46,8 @@ describe('GET /api/search — input validation', () => {
     expect(body.error).toBeTruthy()
   })
 
-  it('returns 400 when q exceeds 100 characters', async () => {
-    const req = makeRequest('a'.repeat(101))
+  it('returns 400 when q exceeds 200 characters', async () => {
+    const req = makeRequest('a'.repeat(201))
     const res = await GET(req)
     expect(res.status).toBe(400)
   })

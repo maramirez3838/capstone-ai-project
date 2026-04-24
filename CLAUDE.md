@@ -13,7 +13,7 @@ update this table before anything else.
 | Artifact | Current File | Version | Notes |
 | :--- | :--- | :--- | :--- |
 | PRD | `Reference Artifacts/STR_Comply_PRD_v2.3.md` | v2.3 | Source Discovery Agent + Approval Flow added; RICE table updated; refresh model and constraints updated |
-| SRD | `Reference Artifacts/STR_Comply_SRD_v1.5.md` | v1.5 | Municipal code URL strategy codified (section 15A.9); section-anchored deep links required on ecode360/amlegal/municode; codeRef corrections for Malibu and Pasadena; agent prompts updated |
+| SRD | `Reference Artifacts/STR_Comply_SRD_v1.8.md` | v1.8 | Sprint 3 and Sprint 4 complete. Section 15C.1 updated to reflect Sprint 4 scope change (market refresh, not new-city ingestion). Section 27 marks both sprints done with 78 tests shipped. |
 | ICP | `Reference Artifacts/STR_Comply_ICP_v1.0.md` | v1.0 | Ideal client profile and Marcus Chen persona |
 | Accessibility Spec | `Reference Artifacts/STR_Comply_AccessibilitySpec_v1.0.md` | v1.0 | WCAG 2.1 AA implementation spec; component-level criteria and dev checklist |
 | Design System | `Reference Artifacts/STR_Comply_DesignSystem_v1.0.md` | v1.0 | Token definitions, component patterns, color palette, typography, anti-patterns — load into context for all UI work |
@@ -70,13 +70,30 @@ See @lessons.md for rules learned during this build.
 
 - PM / FE lead: building UI and backend locally
 - Group partners: collaborating via GitHub
-- Current phase: **Auth complete — tests and README are next**
+- Current phase: **Sprint 4 complete — all agents shipped, tests at 78/78**
 
 **Phase summary:**
 - UI-first phase: complete. Frontend components, pages, and mock data are done.
 - Backend phase: complete. Prisma 7 + Neon DB wired, all API routes live, 5 LA-area markets seeded.
 - Auth phase: complete. NextAuth v5 + Resend magic link wired. Custom `PrismaRawAdapter` in `lib/auth-adapter.ts`. All 3 watchlist routes are auth-gated.
 - Compliance monitor phase: complete. Background agent built (off by default via `COMPLIANCE_MONITOR_ENABLED`). Source discovery agent and HMAC approval flow both shipped.
+- Sprint 2 (2026-04-21): complete.
+  - **Property model + geocoding cache:** `Property` table + Neon migration. `normalizedAddress` (Mapbox place_name) is the unique cache key shared across all users.
+  - **Mapbox address search:** `lib/geocoding.ts` wraps Mapbox Geocoding API v5. `/api/search` dual-path: address-like input → geocode → property cache write → market resolution; falls back to market-name path if token absent.
+  - **SearchBar Mapbox autofill:** `@mapbox/search-js-react` SearchBox; degrades to plain text input without token. Hint copy only promises address search when token is present.
+  - **Agent stubs:** `lib/agents/market-ingestion-agent.ts` (Sprint 4) and `lib/agents/property-requirements-agent.ts` (Sprint 3) scaffolded with full interfaces.
+  - **SRD bumped to v1.7.**
+  - **Outstanding:** Add `NEXT_PUBLIC_MAPBOX_TOKEN` to Vercel dashboard for production to match local.
+- Sprint 3 (2026-04-23): complete.
+  - **Property Requirements Agent:** `lib/agents/property-requirements-agent.ts` — Sonnet + tool_use structured output; prompt caching on market rules context.
+  - **`/api/property/requirements`:** GET endpoint; Zod validation; 503/404/500 error discrimination; `disclaimerRequired: true` on all responses.
+- Sprint 4 (2026-04-23): complete.
+  - **Market Refresh Agent:** `lib/agents/market-ingestion-agent.ts` — Haiku pre-screen + Sonnet + web_search; existing market as grounded context; state-grounded agentic loop pattern; scope-locked to existing markets only.
+  - **`/api/admin/ingest-market`:** POST; HMAC admin auth (AUTH_SECRET, 5-min TTL); body `{ slug }`; rule diff computed before replacing; only active sources replaced; `freshnessStatus → needs_review`.
+  - **Tests:** 78/78 passing across 7 test files; `frontend/docs/testing.md` documents all cases.
+- Sprint 1 (2026-04-21): complete. Two features shipped:
+  - **F5 — Source status surface:** `sourceStatus` now flows from DB → API → UI. `SourceList` and `RuleCard` sources drawer show broken/pending badges when the compliance monitor flags a source. No schema change needed — field already existed.
+  - **F2 — Home sharing / full STR toggle:** New `applicableTo` column on `MarketRule` (migration: `add_applicable_to_market_rule`). Seed data updated with `str_full` for nightly cap (unhosted) and investment property rules; `both` for everything else. New `RuleList` client component renders a pill toggle at the top of the rule breakdown; filters rules in real-time. Toggle state persists in `?type=home_sharing` URL param. Wrapped in `<Suspense>` per lessons.md.
 
 **Key CLI commands (Prisma 7 requires manual DATABASE_URL prefix):**
 ```bash
@@ -103,6 +120,7 @@ npm run dev
 - NextAuth / Auth.js — email magic link; **Resend** is the chosen email provider
 - `@anthropic-ai/sdk` — used by compliance monitor agent only; not in the core user-facing request path
 - `resend` npm package — used by compliance monitor for summary emails (distinct from the Resend NextAuth provider)
+- `@mapbox/search-js-react` — Mapbox SearchBox autofill in SearchBar; requires `NEXT_PUBLIC_MAPBOX_TOKEN`; degrades gracefully when token absent
 - Vercel — app hosting target
 - Telemetry events logged to Postgres
 
@@ -154,6 +172,10 @@ npm run dev
         /watchlist/[marketSlug]/route.ts  ← DELETE /api/watchlist/:marketSlug
         /cron/compliance-monitor/route.ts ← GET /api/cron/compliance-monitor (Vercel cron)
         /admin/approve-source/route.ts    ← POST /api/admin/approve-source?token=...
+        /admin/ingest-market/route.ts     ← POST admin endpoint (HMAC-protected market refresh)
+        /property/requirements/route.ts   ← GET property-level requirements
+    /docs/
+      testing.md                         ← test inventory: 78 cases across 7 files
 lessons.md             ← error log and learned rules (project root)
 ```
 

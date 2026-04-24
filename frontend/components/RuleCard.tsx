@@ -165,22 +165,28 @@ export default function RuleCard({ rule, lastReviewedAt, allSources }: Props) {
       {/* Expandable sources drawer */}
       {sourcesOpen && hasAnySources && (
         <div className="border-t border-gray-50 bg-gray-50 px-5 py-3 space-y-2">
-          {(rule.sources ?? []).map((s) => (
-            <a
-              key={s.id ?? s.url}
-              href={s.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-start gap-2 group"
-            >
-              <ExternalLinkIcon className="h-3 w-3 mt-0.5 flex-shrink-0 text-gray-400 group-hover:text-accent-500 transition-colors" />
-              <span className="text-xs">
-                <span className="text-gray-700 group-hover:text-accent-500 font-medium transition-colors">{s.title}</span>
-                {s.publisher && <span className="text-gray-400 ml-1">· {s.publisher}</span>}
-              </span>
-              <span className="sr-only">(opens in new tab)</span>
-            </a>
-          ))}
+          {(rule.sources ?? []).map((s) => {
+            const isBroken = s.sourceStatus && s.sourceStatus !== 'active'
+            return (
+              <a
+                key={s.id ?? s.url}
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-2 group"
+              >
+                <ExternalLinkIcon className={`h-3 w-3 mt-0.5 flex-shrink-0 transition-colors ${isBroken ? 'text-red-300 group-hover:text-red-500' : 'text-gray-400 group-hover:text-accent-500'}`} />
+                <span className="text-xs flex-1 min-w-0">
+                  <span className={`font-medium transition-colors ${isBroken ? 'text-gray-500 group-hover:text-gray-700' : 'text-gray-700 group-hover:text-accent-500'}`}>{s.title}</span>
+                  {s.publisher && <span className="text-gray-400 ml-1">· {s.publisher}</span>}
+                  {isBroken && (
+                    <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] font-medium text-red-500">(link may be broken)</span>
+                  )}
+                </span>
+                <span className="sr-only">(opens in new tab)</span>
+              </a>
+            )
+          })}
 
           {supplemental.length > 0 && (rule.sources?.length ?? 0) > 0 && (
             <p className="text-[10px] font-medium uppercase tracking-widest text-gray-400 pt-1">
@@ -188,22 +194,28 @@ export default function RuleCard({ rule, lastReviewedAt, allSources }: Props) {
             </p>
           )}
 
-          {supplemental.map((s) => (
-            <a
-              key={s.id ?? s.url}
-              href={s.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-start gap-2 group"
-            >
-              <ExternalLinkIcon className="h-3 w-3 mt-0.5 flex-shrink-0 text-gray-400 group-hover:text-accent-500 transition-colors" />
-              <span className="text-xs">
-                <span className="text-gray-700 group-hover:text-accent-500 font-medium transition-colors">{s.title}</span>
-                {s.publisher && <span className="text-gray-400 ml-1">· {s.publisher}</span>}
-              </span>
-              <span className="sr-only">(opens in new tab)</span>
-            </a>
-          ))}
+          {supplemental.map((s) => {
+            const isBroken = s.sourceStatus && s.sourceStatus !== 'active'
+            return (
+              <a
+                key={s.id ?? s.url}
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-2 group"
+              >
+                <ExternalLinkIcon className={`h-3 w-3 mt-0.5 flex-shrink-0 transition-colors ${isBroken ? 'text-red-300 group-hover:text-red-500' : 'text-gray-400 group-hover:text-accent-500'}`} />
+                <span className="text-xs flex-1 min-w-0">
+                  <span className={`font-medium transition-colors ${isBroken ? 'text-gray-500 group-hover:text-gray-700' : 'text-gray-700 group-hover:text-accent-500'}`}>{s.title}</span>
+                  {s.publisher && <span className="text-gray-400 ml-1">· {s.publisher}</span>}
+                  {isBroken && (
+                    <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] font-medium text-red-500">(link may be broken)</span>
+                  )}
+                </span>
+                <span className="sr-only">(opens in new tab)</span>
+              </a>
+            )
+          })}
         </div>
       )}
     </article>

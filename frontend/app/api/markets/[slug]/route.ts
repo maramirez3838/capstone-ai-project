@@ -68,6 +68,7 @@ export async function GET(
         codeUrl: r.codeUrl,
         displayOrder: r.displayOrder,
         jurisdictionLevel: r.jurisdictionLevel,
+        applicableTo: r.applicableTo,
         sources: r.linkedSources.map((ls: (typeof r.linkedSources)[number]) => ({
           id: ls.source.id,
           title: ls.source.title,
@@ -75,6 +76,7 @@ export async function GET(
           sourceType: ls.source.sourceType,
           publisher: ls.source.publisher,
           displayOrder: ls.source.displayOrder,
+          sourceStatus: ls.source.sourceStatus,
         })),
       })),
       sources: market.sources.map((s: (typeof market.sources)[number]) => ({
@@ -84,6 +86,7 @@ export async function GET(
         sourceType: s.sourceType,
         publisher: s.publisher,
         displayOrder: s.displayOrder,
+        sourceStatus: s.sourceStatus,
       })),
     })
   } catch (err) {
