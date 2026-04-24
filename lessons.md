@@ -40,6 +40,9 @@
 
 ## UI and components
 
+### [2026-04-23] Module-level require of @mapbox/search-js-react failed silently in Vercel SSR
+**Rule:** Never require or import `@mapbox/search-js-react` at the module level. The package registers `customElements` during import — a browser-only API that throws during Next.js SSR on Vercel. The try/catch catches it silently, sets `SearchBox` to `null`, and the plain text fallback renders instead. Always load it inside a `useEffect` with `setSearchBox(() => mod.SearchBox)` so it only runs in the browser.
+
 ### [2026-04-19] FreshnessBadge used a colored dot with no shape differentiator
 **Rule:** The FreshnessBadge dot (`w-2 h-2 rounded-full`) violates the shape-icon rule even though it has a text label alongside it. All freshness indicators must use a named SVG icon (check for fresh, warning triangle for review_due, X for needs_review) in addition to the token color. The generic color-only rule in this section applies to freshness specifically — do not use a dot as the only visual differentiator.
 
