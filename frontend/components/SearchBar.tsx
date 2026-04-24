@@ -1,20 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { resolveSearch, getMarketBySlug } from '@/lib/search'
 import { logEvent } from '@/lib/telemetry'
 import type { Market } from '@/types/market'
-
-// Lazy-import the Mapbox SearchBox so the bundle doesn't fail when the package
-// isn't installed yet. The token check below gates the actual render.
-let SearchBox: React.ComponentType<MapboxSearchBoxProps> | null = null
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  SearchBox = require('@mapbox/search-js-react').SearchBox
-} catch {
-  // Package not installed — address autofill is disabled; plain input is used instead.
-}
 
 interface MapboxSearchBoxProps {
   accessToken: string
@@ -54,6 +44,19 @@ export default function SearchBar({
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [SearchBox, setSearchBox] = useState<React.ComponentType<MapboxSearchBoxProps> | null>(null)
+
+  // Load Mapbox client-side only — the package registers customElements (browser API)
+  // which throws during SSR on Vercel, causing the fallback input to render instead.
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const mod = require('@mapbox/search-js-react')
+      setSearchBox(() => mod.SearchBox)
+    } catch {
+      // package unavailable — plain input fallback stays active
+    }
+  }, [])
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
   const mapboxEnabled = Boolean(mapboxToken && SearchBox)
