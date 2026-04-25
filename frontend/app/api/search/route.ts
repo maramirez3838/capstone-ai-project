@@ -72,6 +72,10 @@ async function resolveAddressQuery(rawAddress: string): Promise<NextResponse> {
   const cached = await db.property.findUnique({
     where: { address: geocoded.normalizedAddress },
     select: {
+      latitude: true,
+      longitude: true,
+      city: true,
+      countyName: true,
       marketId: true,
       market: { select: { id: true, slug: true, name: true, strStatus: true, supportStatus: true } },
     },
@@ -81,11 +85,19 @@ async function resolveAddressQuery(rawAddress: string): Promise<NextResponse> {
     if (cached.market?.supportStatus === 'supported') {
       return NextResponse.json({
         type: 'supported',
+        resolution: 'address',
         market: {
           id: cached.market.id,
           slug: cached.market.slug,
           name: cached.market.name,
           strStatus: cached.market.strStatus,
+        },
+        property: {
+          address: geocoded.normalizedAddress,
+          latitude: cached.latitude,
+          longitude: cached.longitude,
+          city: cached.city,
+          countyName: cached.countyName,
         },
         redirectUrl: `/market/${cached.market.slug}`,
       })
@@ -112,11 +124,19 @@ async function resolveAddressQuery(rawAddress: string): Promise<NextResponse> {
   if (market) {
     return NextResponse.json({
       type: 'supported',
+      resolution: 'address',
       market: {
         id: market.id,
         slug: market.slug,
         name: market.name,
         strStatus: market.strStatus,
+      },
+      property: {
+        address: geocoded.normalizedAddress,
+        latitude: geocoded.latitude,
+        longitude: geocoded.longitude,
+        city: geocoded.city,
+        countyName: geocoded.countyName,
       },
       redirectUrl: `/market/${market.slug}`,
     })
@@ -197,6 +217,7 @@ async function resolveMarketNameQuery(normalized: string): Promise<NextResponse>
   if (market) {
     return NextResponse.json({
       type: 'supported',
+      resolution: 'market',
       market: {
         id: market.id,
         slug: market.slug,

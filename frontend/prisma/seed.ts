@@ -13,6 +13,7 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
 import { markets } from '../../backend/data/markets'
+import { computeMarketRulesVersion } from '../lib/market-rules-version'
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)
@@ -136,8 +137,29 @@ async function main() {
       }
     }
 
+    // Compute and persist rulesVersion — the invalidation key for cached
+    // PropertyRequirements. Anything that changes this hash makes downstream
+    // property caches re-generate on next access.
+    const rulesVersion = computeMarketRulesVersion({
+      strStatus: market.strStatus,
+      permitRequired: market.permitRequired,
+      ownerOccupancyRequired: market.ownerOccupancyRequired,
+      rules: market.rules.map((r) => ({
+        ruleKey: r.ruleKey,
+        value: r.value,
+        details: r.details,
+        codeRef: r.codeRef,
+        applicableTo: r.applicableTo,
+        jurisdictionLevel: r.jurisdictionLevel,
+      })),
+    })
+    await db.market.update({
+      where: { id: upserted.id },
+      data: { rulesVersion },
+    })
+
     console.log(
-      `  ✓ ${market.name} — ${market.rules.length} rules, ${market.sources.length} sources, ${market.aliases.length} aliases, ${joinCount} rule-source links`
+      `  ✓ ${market.name} — ${market.rules.length} rules, ${market.sources.length} sources, ${market.aliases.length} aliases, ${joinCount} rule-source links (v ${rulesVersion})`
     )
   }
 

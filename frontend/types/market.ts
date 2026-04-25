@@ -5,6 +5,30 @@ export type StrStatus = 'allowed' | 'conditional' | 'not_allowed'
 export type PermitRequired = 'yes' | 'no' | 'varies'
 export type OwnerOccupancy = 'yes' | 'no' | 'varies'
 export type FreshnessStatus = 'fresh' | 'review_due' | 'needs_review'
+// Property-level requirement strength — emitted by the property requirements agent.
+// Distinct from StrStatus: a single property can have many requirements at varying levels.
+export type RequirementLevel = 'required' | 'conditional' | 'informational'
+
+// Per-property compliance requirement returned by GET /api/property/requirements.
+// Mirrors the agent's PropertyRequirement output.
+export interface PropertyRequirement {
+  ruleKey: string
+  label: string
+  value: string
+  details?: string
+  codeRef?: string
+  codeUrl?: string
+  requirementLevel: RequirementLevel
+}
+
+export interface PropertyRequirementsResponse {
+  address: string
+  marketId: string
+  requirements: PropertyRequirement[]
+  confidenceNote: string
+  reviewFlags: string[]
+  disclaimerRequired: true
+}
 
 export interface MarketRule {
   ruleKey: string
@@ -52,9 +76,24 @@ export interface Market {
 
 // ─── API response shapes (BE contract reference) ────────────────────────────
 
+// Property context attached to address-resolved search hits so the UI can
+// route to /property and render per-address requirements without re-geocoding.
+export interface SearchResultProperty {
+  address: string             // normalizedAddress (Mapbox place_name) — Property cache key
+  latitude: number
+  longitude: number
+  city: string | null
+  countyName: string | null
+}
+
 export interface SearchResult {
   type: 'supported'
+  // 'address' = query was geocoded and resolved to a market via city/county.
+  // 'market'  = query matched a market slug, alias, or name directly.
+  // The UI uses this to decide whether to land on /property or /market/[slug].
+  resolution: 'address' | 'market'
   market: Pick<Market, 'id' | 'slug' | 'name' | 'strStatus'>
+  property?: SearchResultProperty   // present iff resolution === 'address'
   redirectUrl: string
 }
 
@@ -65,10 +104,54 @@ export interface UnsupportedResult {
 
 export type SearchResponse = SearchResult | UnsupportedResult
 
-// Watchlist item as returned by GET /api/watchlist
+// Watchlist item as returned by GET /api/watchlist (legacy flat shape).
+// Retained as a type stub; the live API now returns WatchlistResponse below.
 export interface WatchlistEntry {
   marketSlug: string
   savedAt: string // ISO 8601
+}
+
+// GET /api/watchlist response — discriminated by kind so the listing page
+// can render markets and properties as independent tabs.
+export interface WatchlistMarketEntry {
+  marketSlug: string
+  savedAt: string
+  market: {
+    name: string
+    strStatus: string
+    countyName: string | null
+    freshnessStatus: string
+    permitRequired: string
+    ownerOccupancyRequired: string
+    lastReviewedAt: string
+  }
+}
+
+export interface WatchlistPropertyEntry {
+  propertyId: string
+  address: string
+  savedAt: string
+  property: {
+    latitude: number
+    longitude: number
+    city: string | null
+    stateCode: string | null
+    countyName: string | null
+    marketId: string | null
+    requirementsGeneratedAt: string | null
+    market: {
+      slug: string
+      name: string
+      strStatus: string
+      freshnessStatus: string
+      lastReviewedAt: string
+    } | null
+  }
+}
+
+export interface WatchlistResponse {
+  markets: WatchlistMarketEntry[]
+  properties: WatchlistPropertyEntry[]
 }
 
 // Geocoded address cache entry (shared across all users)

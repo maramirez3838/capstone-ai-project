@@ -1,22 +1,64 @@
 'use client'
 
+// Save-to-watchlist button. Polymorphic via discriminated kind: 'market' or
+// 'property'. Both variants honor the auth-mounted SSR guard and redirect
+// signed-out users to /login?returnTo=... in compact and full modes
+// (per lessons.md 2026-04-19 — never silently no-op a click).
+
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
 import { useWatchlist } from '@/lib/watchlist'
 
-interface Props {
+type CommonProps = { compact?: boolean }
+
+type MarketProps = CommonProps & {
+  kind: 'market'
   marketSlug: string
   marketName: string
-  // compact: minimal "Save" style for use inside the compliance card
-  compact?: boolean
 }
 
-export default function WatchlistButton({ marketSlug, marketName, compact = false }: Props) {
+type PropertyProps = CommonProps & {
+  kind: 'property'
+  propertyAddress: string
+  propertyDisplay: string
+  // Property URLs are parametric (address/marketId/lat/lon/slug/marketName)
+  // so the caller has to hand returnTo in for the sign-in redirect.
+  returnTo: string
+}
+
+type Props = MarketProps | PropertyProps
+
+export default function WatchlistButton(props: Props) {
   const router = useRouter()
   const { isSignedIn, mounted: authMounted } = useAuth()
-  const { isSaved, save, remove, isAtLimit, mounted: watchlistMounted } = useWatchlist()
+  const wl = useWatchlist()
+  const watchlistMounted = wl.mounted
 
-  // Compact (card) mode — minimal Save/Saved toggle inside the compliance card
+  const compact = props.compact ?? false
+  const isMarket = props.kind === 'market'
+
+  const saved = isMarket
+    ? wl.isSavedMarket(props.marketSlug)
+    : wl.isSavedProperty(props.propertyAddress)
+  const atLimit = isMarket ? wl.isAtMarketLimit : wl.isAtPropertyLimit
+  const displayName = isMarket ? props.marketName : props.propertyDisplay
+
+  const returnTo = isMarket ? `/market/${props.marketSlug}` : props.returnTo
+
+  function doSave() {
+    if (isMarket) wl.saveMarket(props.marketSlug)
+    else wl.saveProperty(props.propertyAddress)
+  }
+
+  function doRemove() {
+    if (isMarket) wl.removeMarket(props.marketSlug)
+    else {
+      const entry = wl.properties.find((p) => p.address === props.propertyAddress)
+      if (entry) wl.removeProperty(entry.propertyId)
+    }
+  }
+
+  // Compact mode — minimal Save/Saved toggle (used inside ComplianceSummaryCard)
   if (compact) {
     if (!authMounted || !watchlistMounted) {
       return <div className="h-7 w-16 animate-pulse rounded-lg bg-gray-200" />
@@ -25,7 +67,7 @@ export default function WatchlistButton({ marketSlug, marketName, compact = fals
     if (!isSignedIn) {
       return (
         <button
-          onClick={() => router.push(`/login?returnTo=/market/${marketSlug}`)}
+          onClick={() => router.push(`/login?returnTo=${encodeURIComponent(returnTo)}`)}
           className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:border-gray-400 transition-colors"
         >
           <BookmarkIcon filled={false} />
@@ -34,10 +76,9 @@ export default function WatchlistButton({ marketSlug, marketName, compact = fals
       )
     }
 
-    const saved = isSaved(marketSlug)
     return (
       <button
-        onClick={() => (saved ? remove(marketSlug) : save(marketSlug))}
+        onClick={() => (saved ? doRemove() : doSave())}
         className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-sm font-medium transition-colors ${
           saved
             ? 'border-gray-300 bg-gray-100 text-gray-600'
@@ -50,21 +91,21 @@ export default function WatchlistButton({ marketSlug, marketName, compact = fals
     )
   }
 
-  // Full mode (standalone button on market page)
+  // Full mode (standalone button on market/property page)
   if (!authMounted || !watchlistMounted) {
     return <div className="h-10 w-44 animate-pulse rounded-lg bg-gray-200" />
   }
 
-  const saved = isSaved(marketSlug)
+  const trackLabel = isMarket ? 'Track this Market' : 'Track this Property'
 
   if (!isSignedIn) {
     return (
       <button
-        onClick={() => router.push(`/login?returnTo=/market/${marketSlug}`)}
+        onClick={() => router.push(`/login?returnTo=${encodeURIComponent(returnTo)}`)}
         className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:border-gray-400 transition-colors"
       >
         <BookmarkIcon filled={false} />
-        Track this Market
+        {trackLabel}
       </button>
     )
   }
@@ -77,7 +118,7 @@ export default function WatchlistButton({ marketSlug, marketName, compact = fals
           Tracking
         </span>
         <button
-          onClick={() => remove(marketSlug)}
+          onClick={doRemove}
           className="text-sm text-gray-500 hover:text-red-500 transition-colors underline underline-offset-2"
         >
           Remove
@@ -86,21 +127,23 @@ export default function WatchlistButton({ marketSlug, marketName, compact = fals
     )
   }
 
-  if (isAtLimit) {
+  if (atLimit) {
+    const limitLabel = isMarket ? 'Market limit' : 'Property limit'
+    const removeLabel = isMarket ? 'a market' : 'a property'
     return (
       <p className="text-sm text-gray-500">
-        Market limit reached (25 markets). Remove a market to add {marketName}.
+        {limitLabel} reached (25). Remove {removeLabel} to add {displayName}.
       </p>
     )
   }
 
   return (
     <button
-      onClick={() => save(marketSlug)}
+      onClick={doSave}
       className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:border-gray-400 transition-colors"
     >
       <BookmarkIcon filled={false} />
-      Track this Market
+      {trackLabel}
     </button>
   )
 }

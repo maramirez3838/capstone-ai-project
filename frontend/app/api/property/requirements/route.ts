@@ -4,12 +4,26 @@
 // within a supported market. Requires the address to already be cached in the Property
 // table (i.e. /api/search must have resolved it first).
 //
-// Response includes disclaimerRequired: true — callers must render the Disclaimer component.
+// Caching strategy:
+//   - The agent's output is persisted on the Property row (requirementsJson, etc.).
+//   - Validity is keyed on Market.rulesVersion. If the market's rulesVersion matches
+//     the snapshot stored on the property, the cached row is returned without an
+//     agent call. If they differ (or no cache exists yet), the agent runs and the
+//     result is persisted with the current rulesVersion.
+//   - rulesVersion is bumped by the seed and by the Market Refresh Agent — those
+//     are the only paths that should change a market's rules, which matches the
+//     product principle that monitor agents are the only reason existing data
+//     updates.
+//
+// Response includes disclaimerRequired: true — callers must render the Disclaimer.
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
-import { runPropertyRequirementsAgent } from '@/lib/agents/property-requirements-agent'
+import {
+  runPropertyRequirementsAgent,
+  type PropertyRequirementsResult,
+} from '@/lib/agents/property-requirements-agent'
 
 const QuerySchema = z.object({
   address: z.string().min(1, 'address is required').max(300),
@@ -45,17 +59,46 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  // Read the parent market's current rulesVersion — this is the cache key.
+  const market = await db.market.findUnique({
+    where: { id: marketId },
+    select: { rulesVersion: true },
+  })
+
+  // Cache hit: cached requirements exist AND the market's rulesVersion hasn't moved.
+  // A null rulesVersion on either side means "not yet computed" — treat as miss so
+  // we generate fresh and persist a real version.
+  const hasCachedAgentOutput =
+    property.requirementsJson !== null &&
+    property.requirementsRulesVersion !== null
+
+  const cacheValid =
+    hasCachedAgentOutput &&
+    market?.rulesVersion !== null &&
+    market?.rulesVersion === property.requirementsRulesVersion
+
+  if (cacheValid) {
+    return NextResponse.json({
+      address: property.address,
+      marketId,
+      requirements: property.requirementsJson,
+      confidenceNote: property.requirementsConfidenceNote ?? '',
+      reviewFlags: property.requirementsReviewFlags ?? [],
+      cached: true,
+      cachedAt: property.requirementsGeneratedAt?.toISOString() ?? null,
+      rulesVersion: property.requirementsRulesVersion,
+      disclaimerRequired: true,
+    })
+  }
+
+  // Cache miss or stale — run the agent and persist the result.
+  let result: PropertyRequirementsResult
   try {
-    const result = await runPropertyRequirementsAgent({
+    result = await runPropertyRequirementsAgent({
       address,
       marketId,
       latitude: lat,
       longitude: lon,
-    })
-
-    return NextResponse.json({
-      ...result,
-      disclaimerRequired: true,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
@@ -77,4 +120,24 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
+
+  // Persist the agent output snapshot. We tag it with the market's current
+  // rulesVersion so the next read can do a cheap equality check.
+  await db.property.update({
+    where: { id: property.id },
+    data: {
+      requirementsJson: result.requirements as never,
+      requirementsConfidenceNote: result.confidenceNote ?? null,
+      requirementsReviewFlags: result.reviewFlags ?? [],
+      requirementsGeneratedAt: new Date(),
+      requirementsRulesVersion: market?.rulesVersion ?? null,
+    },
+  })
+
+  return NextResponse.json({
+    ...result,
+    cached: false,
+    rulesVersion: market?.rulesVersion ?? null,
+    disclaimerRequired: true,
+  })
 }

@@ -28,6 +28,9 @@ import {
   type ExistingMarketContext,
   type MarketIngestionResult,
 } from '@/lib/agents/market-ingestion-agent'
+import { computeMarketRulesVersion } from '@/lib/market-rules-version'
+import { writeChangeEvent } from '@/lib/notifications/change-event'
+import { fanOutChangeEvent } from '@/lib/notifications/fanout'
 
 // ---------------------------------------------------------------------------
 // HMAC admin auth — time-limited token (5 min TTL)
@@ -355,8 +358,45 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     `
   }
 
+  // Bump rulesVersion so any cached PropertyRequirements rows in this market
+  // are invalidated on next read. The hash includes the new rules + the
+  // top-level status fields we just updated.
+  const rulesVersion = computeMarketRulesVersion({
+    strStatus: result.strStatus,
+    permitRequired: result.permitRequired,
+    ownerOccupancyRequired: result.ownerOccupancyRequired,
+    rules: result.rules.map((r) => ({
+      ruleKey: r.ruleKey,
+      value: r.value,
+      details: r.details,
+      codeRef: r.codeRef,
+      applicableTo: r.applicableTo,
+      jurisdictionLevel: r.jurisdictionLevel,
+    })),
+  })
+  await db.$executeRaw`
+    UPDATE "Market" SET "rulesVersion" = ${rulesVersion} WHERE id = ${market.id}
+  `
+
+  // Persist the diff as a MarketChangeEvent and fan out to watchers.
+  // Inline (synchronous) because admin refresh is rare and watcher count is
+  // small. Email send is async via the outbox cron — only the queue write
+  // happens here.
+  const statusChanged = market.strStatus !== result.strStatus
+  const event = await writeChangeEvent({
+    marketId: market.id,
+    rulesVersionFrom: null, // pre-this-feature, prior version unknown — store null first time
+    rulesVersionTo: rulesVersion,
+    diff: ruleDiff,
+    statusChanged,
+  })
+  let fanOutSummary: { queued: number; suppressed: number; skipped: number } | null = null
+  if (event) {
+    fanOutSummary = await fanOutChangeEvent(event.id)
+  }
+
   console.log(
-    `[ingest-market] Refreshed ${slug} (${market.id}): ${result.rules.length} rules, ${result.sources.length} sources`
+    `[ingest-market] Refreshed ${slug} (${market.id}): ${result.rules.length} rules, ${result.sources.length} sources, v ${rulesVersion}`
   )
 
   return NextResponse.json({
@@ -366,7 +406,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     reviewNotes: result.reviewNotes,
     ruleCount: result.rules.length,
     sourceCount: result.sources.length,
+    rulesVersion,
     ruleDiff,
+    changeEventId: event?.id ?? null,
+    fanOut: fanOutSummary,
     result,
   })
 }

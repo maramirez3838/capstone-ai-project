@@ -7,7 +7,8 @@ import { useAuth } from '@/lib/auth'
 
 export default function Nav() {
   const pathname = usePathname()
-  const { entries, mounted } = useWatchlist()
+  const { markets, properties, mounted } = useWatchlist()
+  const totalSaved = markets.length + properties.length
   const { isSignedIn, email, signOut, mounted: authMounted } = useAuth()
 
   return (
@@ -43,16 +44,16 @@ export default function Nav() {
             }`}
           >
             Watchlist
-            {mounted && entries.length > 0 && (
+            {mounted && totalSaved > 0 && (
               <span
-                aria-label={`${entries.length} saved market${entries.length !== 1 ? 's' : ''}`}
+                aria-label={`${totalSaved} saved item${totalSaved !== 1 ? 's' : ''}`}
                 className={`text-[11px] font-medium rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ${
                   pathname === '/watchlist'
                     ? 'bg-white text-gray-900'
                     : 'bg-gray-900 text-white'
                 }`}
               >
-                <span aria-hidden="true">{entries.length}</span>
+                <span aria-hidden="true">{totalSaved}</span>
               </span>
             )}
           </Link>

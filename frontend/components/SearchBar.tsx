@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { resolveSearch, getMarketBySlug } from '@/lib/search'
 import { logEvent } from '@/lib/telemetry'
+import { buildPropertyHref } from '@/lib/property-urls'
 import type { Market } from '@/types/market'
 
 interface MapboxSearchBoxProps {
@@ -76,7 +77,20 @@ export default function SearchBar({
       const result = await resolveSearch(trimmed)
 
       if (result.type === 'supported') {
-        if (onSearch) {
+        // Address-resolved hits go to /property where per-address requirements
+        // are rendered; market-name hits keep the existing /market/[slug] flow.
+        if (result.resolution === 'address' && result.property) {
+          router.push(
+            buildPropertyHref({
+              address: result.property.address,
+              marketId: result.market.id,
+              lat: result.property.latitude,
+              lon: result.property.longitude,
+              slug: result.market.slug,
+              marketName: result.market.name,
+            })
+          )
+        } else if (onSearch) {
           const market = await getMarketBySlug(result.market.slug)
           onSearch(market, trimmed)
         } else {

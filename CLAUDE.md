@@ -12,8 +12,8 @@ update this table before anything else.
 
 | Artifact | Current File | Version | Notes |
 | :--- | :--- | :--- | :--- |
-| PRD | `Reference Artifacts/STR_Comply_PRD_v2.3.md` | v2.3 | Source Discovery Agent + Approval Flow added; RICE table updated; refresh model and constraints updated |
-| SRD | `Reference Artifacts/STR_Comply_SRD_v1.8.md` | v1.8 | Sprint 3 and Sprint 4 complete. Section 15C.1 updated to reflect Sprint 4 scope change (market refresh, not new-city ingestion). Section 27 marks both sprints done with 78 tests shipped. |
+| PRD | `Reference Artifacts/STR_Comply_PRD_v2.5.md` | v2.5 | Property watchlist + change-alert infrastructure (BE only). Watchlist now polymorphic (markets + properties as independent 25-item lists). `MarketChangeEvent` log + outbox/Resend dispatch + per-user `NotificationPreference` + RFC 8058 unsubscribe. Off by default via `NOTIFICATIONS_ENABLED`. |
+| SRD | `Reference Artifacts/STR_Comply_SRD_v2.1.md` | v2.1 | Schema additions: nullable `WatchlistItem.marketId/propertyId` (XOR), `MarketChangeEvent`, `NotificationPreference`, `Notification`. New modules under `lib/notifications/` (change-event, fanout, outbox, email-templates) + `lib/unsubscribe-token.ts`. Cron `/api/cron/notifications` every 15 min. 146 tests passing. |
 | ICP | `Reference Artifacts/STR_Comply_ICP_v1.0.md` | v1.0 | Ideal client profile and Marcus Chen persona |
 | Accessibility Spec | `Reference Artifacts/STR_Comply_AccessibilitySpec_v1.0.md` | v1.0 | WCAG 2.1 AA implementation spec; component-level criteria and dev checklist |
 | Design System | `Reference Artifacts/STR_Comply_DesignSystem_v1.0.md` | v1.0 | Token definitions, component patterns, color palette, typography, anti-patterns — load into context for all UI work |
@@ -293,6 +293,12 @@ hallucinate a result.
 - `market_saved`
 - `market_removed`
 - `unsupported_market_seen`
+- `property_saved`
+- `property_removed`
+- `change_event_written`        — emitted when a `MarketChangeEvent` row is persisted
+- `notification_queued`         — emitted when fan-out queues 1+ Notification rows for an event
+- `notification_sent`           — emitted by the outbox after a successful Resend dispatch
+- `notification_unsubscribed`   — emitted by the one-click unsubscribe route
 
 During UI phase, telemetry calls can be stubbed (console.log or no-op). Wire to
 real endpoints when BE joins.

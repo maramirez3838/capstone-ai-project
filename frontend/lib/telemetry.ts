@@ -9,6 +9,12 @@ export type TelemetryEventName =
   | 'market_saved'
   | 'market_removed'
   | 'unsupported_market_seen'
+  | 'property_saved'
+  | 'property_removed'
+  | 'change_event_written'
+  | 'notification_queued'
+  | 'notification_sent'
+  | 'notification_unsubscribed'
 
 interface TelemetryPayload {
   marketSlug?: string

@@ -90,6 +90,9 @@
 
 ## Backend and database
 
+### [2026-04-25] Stale Prisma migration advisory lock blocks subsequent `migrate deploy` indefinitely
+**Rule:** When `prisma migrate deploy` returns `P1002 — Timed out trying to acquire a postgres advisory lock (SELECT pg_advisory_lock(72707369))`, an earlier interrupted Prisma migration left lock id `72707369` held by an idle pgbouncer connection in Neon. Retrying does not help — the connection persists. Diagnose with `SELECT pid, state, application_name FROM pg_stat_activity WHERE pid IN (SELECT pid FROM pg_locks WHERE locktype='advisory' AND objid=72707369)`. If the holder is `state='idle'` and `application_name='pgbouncer'`, terminate it with `SELECT pg_terminate_backend(<pid>)`. Then re-run the migration. Also: `prisma migrate dev` is interactive-only (fails with "non-interactive environment"); for non-interactive flows use `prisma migrate diff --from-config-datasource --to-schema <path> --script` to generate SQL, save as `prisma/migrations/<ts>_<name>/migration.sql`, then `prisma migrate deploy`.
+
 ### [2026-04-21] Dev server started before a Prisma migration causes 500s and stale IDE types
 **Rule:** After running `prisma migrate dev` (adding a new model or column), always restart the Next.js dev server AND run `npx prisma generate` before testing. The running process holds the old `PrismaClient` in memory via the `globalThis` singleton — new model accessors like `db.property` will throw at runtime even though the migration succeeded. `prisma generate` also clears the IDE TypeScript server's stale type errors for the new model.
 
