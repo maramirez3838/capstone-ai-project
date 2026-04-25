@@ -28,6 +28,7 @@ import {
   type ExistingMarketContext,
   type MarketIngestionResult,
 } from '@/lib/agents/market-ingestion-agent'
+import { computeMarketRulesVersion } from '@/lib/market-rules-version'
 
 // ---------------------------------------------------------------------------
 // HMAC admin auth — time-limited token (5 min TTL)
@@ -355,8 +356,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     `
   }
 
+  // Bump rulesVersion so any cached PropertyRequirements rows in this market
+  // are invalidated on next read. The hash includes the new rules + the
+  // top-level status fields we just updated.
+  const rulesVersion = computeMarketRulesVersion({
+    strStatus: result.strStatus,
+    permitRequired: result.permitRequired,
+    ownerOccupancyRequired: result.ownerOccupancyRequired,
+    rules: result.rules.map((r) => ({
+      ruleKey: r.ruleKey,
+      value: r.value,
+      details: r.details,
+      codeRef: r.codeRef,
+      applicableTo: r.applicableTo,
+      jurisdictionLevel: r.jurisdictionLevel,
+    })),
+  })
+  await db.$executeRaw`
+    UPDATE "Market" SET "rulesVersion" = ${rulesVersion} WHERE id = ${market.id}
+  `
+
   console.log(
-    `[ingest-market] Refreshed ${slug} (${market.id}): ${result.rules.length} rules, ${result.sources.length} sources`
+    `[ingest-market] Refreshed ${slug} (${market.id}): ${result.rules.length} rules, ${result.sources.length} sources, v ${rulesVersion}`
   )
 
   return NextResponse.json({
@@ -366,6 +387,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     reviewNotes: result.reviewNotes,
     ruleCount: result.rules.length,
     sourceCount: result.sources.length,
+    rulesVersion,
     ruleDiff,
     result,
   })
