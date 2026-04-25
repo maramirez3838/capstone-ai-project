@@ -15,18 +15,20 @@ datasource db {
 // Stores authenticated users. Created on first magic-link sign-in.
 // ---------------------------------------------------------------------------
 model User {
-  id             String           @id @default(cuid())
-  email          String           @unique
-  emailVerified  DateTime?
-  name           String?
-  image          String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  accounts       Account[]
-  sessions       Session[]
-  watchlistItems WatchlistItem[]
-  telemetry      TelemetryEvent[]
+  accounts               Account[]
+  sessions               Session[]
+  watchlistItems         WatchlistItem[]
+  telemetry              TelemetryEvent[]
+  notificationPreference NotificationPreference?
+  notifications          Notification[]
 }
 
 // ---------------------------------------------------------------------------
@@ -80,12 +82,12 @@ model VerificationToken {
 // Valid values are documented on each field.
 // ---------------------------------------------------------------------------
 model Market {
-  id                     String           @id @default(cuid())
-  slug                   String           @unique   // URL-safe identifier, e.g. "santa-monica"
-  name                   String                     // Display name, e.g. "Santa Monica"
-  stateCode              String           @default("CA")
-  countyName             String?
-  regionLabel            String?                    // e.g. "Westside LA"
+  id          String  @id @default(cuid())
+  slug        String  @unique // URL-safe identifier, e.g. "santa-monica"
+  name        String // Display name, e.g. "Santa Monica"
+  stateCode   String  @default("CA")
+  countyName  String?
+  regionLabel String? // e.g. "Westside LA"
 
   // Compliance status fields
   // strStatus:             "allowed" | "conditional" | "not_allowed"
@@ -97,21 +99,27 @@ model Market {
   permitRequired         String
   ownerOccupancyRequired String
   freshnessStatus        String
-  supportStatus          String           @default("supported")
+  supportStatus          String @default("supported")
 
-  summary                String           // 120–180 word plain-English summary
-  notableRestrictions    String?          // Optional short highlights for the card
+  summary             String // 120–180 word plain-English summary
+  notableRestrictions String? // Optional short highlights for the card
 
-  lastReviewedAt         DateTime
-  createdAt              DateTime         @default(now())
-  updatedAt              DateTime         @updatedAt
+  lastReviewedAt DateTime
+  // Stable hash of the market's rules + status fields. When this changes,
+  // cached PropertyRequirements rows tied to this market become stale and
+  // re-generate on next access. Computed by lib/market-rules-version.ts;
+  // bumped by the seed and the Market Refresh Agent.
+  rulesVersion   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  aliases                MarketAlias[]
-  rules                  MarketRule[]
-  sources                MarketSource[]
-  watchlistItems         WatchlistItem[]
-  telemetry              TelemetryEvent[]
-  properties             Property[]
+  aliases        MarketAlias[]
+  rules          MarketRule[]
+  sources        MarketSource[]
+  watchlistItems WatchlistItem[]
+  telemetry      TelemetryEvent[]
+  properties     Property[]
+  changeEvents   MarketChangeEvent[]
 }
 
 // ---------------------------------------------------------------------------
@@ -123,10 +131,10 @@ model Market {
 model MarketAlias {
   id        String   @id @default(cuid())
   marketId  String
-  alias     String                         // Normalized lowercase alias string
+  alias     String // Normalized lowercase alias string
   createdAt DateTime @default(now())
 
-  market    Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  market Market @relation(fields: [marketId], references: [id], onDelete: Cascade)
 
   @@unique([marketId, alias])
   @@index([alias])
@@ -141,12 +149,12 @@ model MarketAlias {
 model MarketRule {
   id                String   @id @default(cuid())
   marketId          String
-  ruleKey           String                 // Machine key, e.g. "nightly_cap"
-  label             String                 // Display label, e.g. "Nightly Cap"
-  value             String                 // Display value, e.g. "30 nights/year (unhosted)"
-  details           String?                // Optional expanded explanation
-  codeRef           String?                // e.g. "SMMC § 6.20.050"
-  codeUrl           String?                // Link to cited code section
+  ruleKey           String // Machine key, e.g. "nightly_cap"
+  label             String // Display label, e.g. "Nightly Cap"
+  value             String // Display value, e.g. "30 nights/year (unhosted)"
+  details           String? // Optional expanded explanation
+  codeRef           String? // e.g. "SMMC § 6.20.050"
+  codeUrl           String? // Link to cited code section
   displayOrder      Int      @default(0)
   // jurisdictionLevel: "city" | "county" | "state" — nullable, not all rules have a level
   jurisdictionLevel String?
@@ -155,8 +163,8 @@ model MarketRule {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  market            Market             @relation(fields: [marketId], references: [id], onDelete: Cascade)
-  linkedSources     MarketRuleSource[]
+  market        Market             @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  linkedSources MarketRuleSource[]
 
   @@index([marketId, ruleKey])
 }
@@ -167,27 +175,27 @@ model MarketRule {
 // Ordered by displayOrder. Clicking a source is tracked via telemetry.
 // ---------------------------------------------------------------------------
 model MarketSource {
-  id                String    @id @default(cuid())
-  marketId          String
-  title             String
-  url               String
+  id           String   @id @default(cuid())
+  marketId     String
+  title        String
+  url          String
   // sourceType: "official_program_page" | "municipal_code" | "tax_registration"
   //             | "city_ordinance" | "other"
-  sourceType        String
-  publisher         String?
-  displayOrder      Int       @default(0)
-  contentHash       String?   // SHA-256 of stripped page text — used to skip unchanged sources
-  createdAt         DateTime  @default(now())
+  sourceType   String
+  publisher    String?
+  displayOrder Int      @default(0)
+  contentHash  String? // SHA-256 of stripped page text — used to skip unchanged sources
+  createdAt    DateTime @default(now())
 
   // Source lifecycle tracking for the symbiotic monitor ↔ discoverer system
   // sourceStatus: "active" | "broken" | "pending_review" | "replaced"
   sourceStatus      String    @default("active")
   brokenSince       DateTime? // set when monitor first marks this source broken
   discoveryAttempts Int       @default(0) // incremented each time discoverer runs; capped at 3
-  replacesId        String?   // points to the broken source this record replaces
+  replacesId        String? // points to the broken source this record replaces
 
-  market       Market             @relation(fields: [marketId], references: [id], onDelete: Cascade)
-  linkedRules  MarketRuleSource[]
+  market      Market             @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  linkedRules MarketRuleSource[]
 
   @@index([marketId])
   @@index([sourceStatus])
@@ -199,12 +207,12 @@ model MarketSource {
 // A rule may cite multiple sources; a source may back multiple rules.
 // ---------------------------------------------------------------------------
 model MarketRuleSource {
-  id        String       @id @default(cuid())
-  ruleId    String
-  sourceId  String
+  id       String @id @default(cuid())
+  ruleId   String
+  sourceId String
 
-  rule      MarketRule   @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  source    MarketSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  rule   MarketRule   @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  source MarketSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
 
   @@unique([ruleId, sourceId])
   @@index([ruleId])
@@ -218,39 +226,55 @@ model MarketRuleSource {
 // marketId is null when the address falls outside all supported jurisdictions.
 // ---------------------------------------------------------------------------
 model Property {
-  id          String   @id @default(cuid())
-  address     String   @unique  // normalized place_name from Mapbox — canonical cache key
-  latitude    Float
-  longitude   Float
-  city        String?
-  stateCode   String?
-  countyName  String?
-  postalCode  String?
-  marketId    String?           // null = unsupported jurisdiction
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String  @id @default(cuid())
+  address    String  @unique // normalized place_name from Mapbox — canonical cache key
+  latitude   Float
+  longitude  Float
+  city       String?
+  stateCode  String?
+  countyName String?
+  postalCode String?
+  marketId   String? // null = unsupported jurisdiction
 
-  market      Market?  @relation(fields: [marketId], references: [id])
+  // Cached property requirements agent output. Populated on first lookup;
+  // invalidated when requirementsRulesVersion no longer matches the parent
+  // Market.rulesVersion. See /api/property/requirements for the cache check.
+  requirementsJson           Json?
+  requirementsConfidenceNote String?
+  requirementsReviewFlags    String[]  @default([])
+  requirementsGeneratedAt    DateTime?
+  requirementsRulesVersion   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  market         Market?         @relation(fields: [marketId], references: [id])
+  watchlistItems WatchlistItem[]
 
   @@index([city, stateCode])
 }
 
 // ---------------------------------------------------------------------------
 // WatchlistItem
-// Saves a market to a user's watchlist. The unique constraint prevents
-// duplicates. This table is also the foundation for future change alerts:
-// query watchlist items where market.updatedAt > user's last notification.
+// Polymorphic save: exactly one of marketId / propertyId is set per row
+// (XOR invariant enforced in the POST handler — Prisma 7 doesn't support
+// CHECK constraints natively). NULLs are distinct in Postgres unique indexes,
+// so the two @@unique lines below dedupe each kind without colliding on the
+// other. Both relations cascade on user/market/property delete.
 // ---------------------------------------------------------------------------
 model WatchlistItem {
-  id        String   @id @default(cuid())
-  userId    String
-  marketId  String
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String
+  marketId   String?
+  propertyId String?
+  createdAt  DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  market    Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  market   Market?   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@unique([userId, marketId])
+  @@unique([userId, propertyId])
   @@index([userId])
 }
 
@@ -262,20 +286,98 @@ model WatchlistItem {
 // ---------------------------------------------------------------------------
 model TelemetryEvent {
   id           String   @id @default(cuid())
-  userId       String?                    // null for anonymous users
-  marketId     String?                    // null for non-market events
-  sessionId    String?                    // client-generated session ID
+  userId       String? // null for anonymous users
+  marketId     String? // null for non-market events
+  sessionId    String? // client-generated session ID
   // eventName: "search_performed" | "result_viewed" | "source_clicked"
   //            | "market_saved" | "market_removed" | "unsupported_market_seen"
+  //            | "property_saved" | "property_removed"
+  //            | "change_event_written" | "notification_queued"
+  //            | "notification_sent" | "notification_unsubscribed"
   eventName    String
-  queryText    String?                    // the raw search query, if applicable
-  metadataJson Json?                      // arbitrary extra context
+  queryText    String? // the raw search query, if applicable
+  metadataJson Json? // arbitrary extra context
   createdAt    DateTime @default(now())
 
-  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  market       Market?  @relation(fields: [marketId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  market Market? @relation(fields: [marketId], references: [id], onDelete: SetNull)
 
   @@index([eventName, createdAt])
   @@index([marketId])
   @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// MarketChangeEvent
+// One row per detected market change (rules added/removed/modified or
+// top-level status fields changed). Written by /api/admin/ingest-market
+// after a successful refresh, when the rule diff is non-empty. Drives
+// alert fan-out now and the future N4 rule-diff UI surface.
+// severity: "high" | "medium" | "low" — see lib/notifications/change-event.ts
+// ---------------------------------------------------------------------------
+model MarketChangeEvent {
+  id               String   @id @default(cuid())
+  marketId         String
+  rulesVersionFrom String? // null on first refresh after this feature ships
+  rulesVersionTo   String
+  changeSummary    Json // { added: string[], removed: string[], changed: { ruleKey, field, from, to }[] }
+  severity         String
+  detectedAt       DateTime @default(now())
+
+  market        Market         @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+
+  @@index([marketId, detectedAt])
+}
+
+// ---------------------------------------------------------------------------
+// NotificationPreference
+// Lazy-init: no row means use defaults. Avoids backfill on existing users.
+// digestFrequency column reserved for future digest delivery — outbox MVP
+// only honors "immediate".
+// ---------------------------------------------------------------------------
+model NotificationPreference {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  alertsEnabled   Boolean  @default(true) // master switch
+  emailEnabled    Boolean  @default(true) // channel
+  // minSeverity: "low" | "medium" | "high" — events below this are suppressed
+  minSeverity     String   @default("low")
+  // digestFrequency: "immediate" | "daily" | "weekly" — only "immediate" honored in MVP
+  digestFrequency String   @default("immediate")
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Notification
+// Outbox + audit log. One row per (recipient × change event × watch source).
+// The unique constraint on (userId, changeEventId, watchKind, watchTargetId)
+// makes fan-out idempotent — safe to re-run. The outbox processor flips
+// status queued → sent (or failed after maxAttempts retries).
+// status: "queued" | "sent" | "failed" | "suppressed"
+// channel: "email" only for MVP
+// ---------------------------------------------------------------------------
+model Notification {
+  id            String    @id @default(cuid())
+  userId        String
+  changeEventId String
+  // watchKind: "market" | "property" — why this user is being notified
+  watchKind     String
+  watchTargetId String // marketId or propertyId, depending on watchKind
+  status        String    @default("queued")
+  channel       String    @default("email")
+  attemptCount  Int       @default(0)
+  lastAttemptAt DateTime?
+  sentAt        DateTime?
+  failureReason String?
+  createdAt     DateTime  @default(now())
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  changeEvent MarketChangeEvent @relation(fields: [changeEventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, changeEventId, watchKind, watchTargetId])
+  @@index([status, createdAt])
+  @@index([userId, sentAt])
 }

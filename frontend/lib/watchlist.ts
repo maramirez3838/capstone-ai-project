@@ -1,49 +1,36 @@
 'use client'
 
-// Watchlist hook — fetches from and writes to the real API.
-// All routes require auth. Until NextAuth is wired in, the API returns
-// 401 and the hook gracefully shows an empty watchlist.
-// When auth is added, this file does not need to change.
+// Watchlist hook — fetches from and writes to /api/watchlist.
+// Polymorphic: tracks both saved markets and saved properties as independent
+// lists with independent 25-item limits. The mounted flag follows the
+// SSR-safe pattern (lessons.md 2026-04-13) so consumers can avoid hydration
+// mismatches by rendering a skeleton until mounted === true.
 
 import { useState, useEffect, useCallback } from 'react'
 import { logEvent } from './telemetry'
+import type { WatchlistMarketEntry, WatchlistPropertyEntry, WatchlistResponse } from '@/types/market'
 
-const MAX_ITEMS = 25
-
-export interface WatchlistEntry {
-  marketSlug: string
-  savedAt: string // ISO 8601
-  market: {
-    name: string
-    strStatus: string
-    countyName: string | null
-    freshnessStatus: string
-    permitRequired: string
-    ownerOccupancyRequired: string
-    lastReviewedAt: string
-  }
-}
+const MAX_PER_KIND = 25
 
 export function useWatchlist() {
-  const [entries, setEntries] = useState<WatchlistEntry[]>([])
+  const [markets, setMarkets] = useState<WatchlistMarketEntry[]>([])
+  const [properties, setProperties] = useState<WatchlistPropertyEntry[]>([])
   const [mounted, setMounted] = useState(false)
 
   const fetchWatchlist = useCallback(async () => {
     try {
       const res = await fetch('/api/watchlist')
-      if (res.status === 401) {
-        // Not authenticated — empty watchlist is the correct state
-        setEntries([])
-        return
-      }
       if (!res.ok) {
-        setEntries([])
+        setMarkets([])
+        setProperties([])
         return
       }
-      const data: WatchlistEntry[] = await res.json()
-      setEntries(data)
+      const data: WatchlistResponse = await res.json()
+      setMarkets(data.markets)
+      setProperties(data.properties)
     } catch {
-      setEntries([])
+      setMarkets([])
+      setProperties([])
     }
   }, [])
 
@@ -52,9 +39,10 @@ export function useWatchlist() {
     fetchWatchlist()
   }, [fetchWatchlist])
 
-  async function save(slug: string) {
-    if (entries.some((e) => e.marketSlug === slug)) return
-    if (entries.length >= MAX_ITEMS) return
+  // ── Market actions ──────────────────────────────────────────────────────
+  async function saveMarket(slug: string) {
+    if (markets.some((e) => e.marketSlug === slug)) return
+    if (markets.length >= MAX_PER_KIND) return
 
     try {
       const res = await fetch('/api/watchlist', {
@@ -64,34 +52,83 @@ export function useWatchlist() {
       })
       if (res.ok) {
         logEvent('market_saved', { marketSlug: slug })
-        // Re-fetch to get the server-authoritative list with embedded market data
         await fetchWatchlist()
       }
     } catch {
-      // Save silently fails — user can retry
+      // Silent failure — user can retry
     }
   }
 
-  async function remove(slug: string) {
+  async function removeMarket(slug: string) {
     try {
       const res = await fetch(`/api/watchlist/${encodeURIComponent(slug)}`, {
         method: 'DELETE',
       })
       if (res.ok) {
         logEvent('market_removed', { marketSlug: slug })
-        // Optimistically update — remove from local state immediately
-        setEntries((prev) => prev.filter((e) => e.marketSlug !== slug))
+        setMarkets((prev) => prev.filter((e) => e.marketSlug !== slug))
       }
     } catch {
-      // Remove silently fails — user can retry
+      // Silent failure — user can retry
     }
   }
 
-  function isSaved(slug: string): boolean {
-    return entries.some((e) => e.marketSlug === slug)
+  // ── Property actions ────────────────────────────────────────────────────
+  async function saveProperty(address: string) {
+    if (properties.some((e) => e.address === address)) return
+    if (properties.length >= MAX_PER_KIND) return
+
+    try {
+      const res = await fetch('/api/watchlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propertyAddress: address }),
+      })
+      if (res.ok) {
+        logEvent('property_saved', { metadata: { address } })
+        await fetchWatchlist()
+      }
+    } catch {
+      // Silent failure — user can retry
+    }
   }
 
-  const isAtLimit = entries.length >= MAX_ITEMS
+  async function removeProperty(propertyId: string) {
+    try {
+      const res = await fetch(`/api/watchlist/property/${encodeURIComponent(propertyId)}`, {
+        method: 'DELETE',
+      })
+      if (res.ok) {
+        logEvent('property_removed', { metadata: { propertyId } })
+        setProperties((prev) => prev.filter((e) => e.propertyId !== propertyId))
+      }
+    } catch {
+      // Silent failure — user can retry
+    }
+  }
 
-  return { entries, save, remove, isSaved, isAtLimit, mounted }
+  function isSavedMarket(slug: string): boolean {
+    return markets.some((e) => e.marketSlug === slug)
+  }
+
+  function isSavedProperty(address: string): boolean {
+    return properties.some((e) => e.address === address)
+  }
+
+  const isAtMarketLimit = markets.length >= MAX_PER_KIND
+  const isAtPropertyLimit = properties.length >= MAX_PER_KIND
+
+  return {
+    markets,
+    properties,
+    saveMarket,
+    removeMarket,
+    saveProperty,
+    removeProperty,
+    isSavedMarket,
+    isSavedProperty,
+    isAtMarketLimit,
+    isAtPropertyLimit,
+    mounted,
+  }
 }

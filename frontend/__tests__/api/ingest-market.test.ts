@@ -30,11 +30,23 @@ vi.mock('@/lib/agents/market-ingestion-agent', () => ({
   runMarketIngestionAgent: vi.fn(),
 }))
 
+// Mock the alert pipeline — exercised in its own test files. Stub returns
+// match the real signatures so the route can call them without throwing.
+vi.mock('@/lib/notifications/change-event', () => ({
+  writeChangeEvent: vi.fn().mockResolvedValue({ id: 'evt-stub' }),
+}))
+vi.mock('@/lib/notifications/fanout', () => ({
+  fanOutChangeEvent: vi.fn().mockResolvedValue({ queued: 0, suppressed: 0, skipped: 0 }),
+}))
+
 import { POST } from '@/app/api/admin/ingest-market/route'
 import { db } from '@/lib/db'
 import { runMarketIngestionAgent } from '@/lib/agents/market-ingestion-agent'
 
-const mockDb = db as { $queryRaw: ReturnType<typeof vi.fn>; $executeRaw: ReturnType<typeof vi.fn> }
+const mockDb = db as unknown as {
+  $queryRaw: ReturnType<typeof vi.fn>
+  $executeRaw: ReturnType<typeof vi.fn>
+}
 const mockAgent = runMarketIngestionAgent as ReturnType<typeof vi.fn>
 
 // ---------------------------------------------------------------------------

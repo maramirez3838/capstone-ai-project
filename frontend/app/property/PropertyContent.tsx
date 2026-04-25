@@ -8,6 +8,7 @@ import PropertyHeader from '@/components/PropertyHeader'
 import PropertyRequirementsList from '@/components/PropertyRequirementsList'
 import ConfidenceCallout from '@/components/ConfidenceCallout'
 import Disclaimer from '@/components/Disclaimer'
+import WatchlistButton from '@/components/WatchlistButton'
 import { logEvent } from '@/lib/telemetry'
 import { buildPropertyHref, buildMarketHrefFromProperty } from '@/lib/property-urls'
 import type { PropertyRequirementsResponse } from '@/types/market'
@@ -137,6 +138,17 @@ export default function PropertyContent() {
               Property-level requirements
             </h2>
             <PropertyRequirementsList requirements={state.data.requirements ?? []} />
+          </div>
+
+          {/* Watchlist — only when requirements loaded; saving a property
+              we couldn't analyze would be confusing. */}
+          <div className="mt-6">
+            <WatchlistButton
+              kind="property"
+              propertyAddress={address}
+              propertyDisplay={address}
+              returnTo={propertyHref}
+            />
           </div>
         </>
       )}

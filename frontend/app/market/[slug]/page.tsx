@@ -251,7 +251,7 @@ export default async function MarketPage({
 
       {/* Watchlist */}
       <div className="mt-6">
-        <WatchlistButton marketSlug={market.slug} marketName={market.name} />
+        <WatchlistButton kind="market" marketSlug={market.slug} marketName={market.name} />
       </div>
 
       {/* Disclaimer */}

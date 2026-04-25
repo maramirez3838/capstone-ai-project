@@ -118,7 +118,7 @@ export default function HomePage() {
 
             {/* Watchlist */}
             <div className="mt-6">
-              <WatchlistButton marketSlug={state.market.slug} marketName={state.market.name} />
+              <WatchlistButton kind="market" marketSlug={state.market.slug} marketName={state.market.name} />
             </div>
 
             {/* Disclaimer */}

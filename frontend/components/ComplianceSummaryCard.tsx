@@ -60,7 +60,7 @@ export default function ComplianceSummaryCard({ market }: Props) {
             <p className={`text-sm font-medium ${text}`}>{heading}</p>
           </div>
         </div>
-        <WatchlistButton marketSlug={market.slug} marketName={market.name} compact />
+        <WatchlistButton kind="market" marketSlug={market.slug} marketName={market.name} compact />
       </div>
 
       {/* Body */}

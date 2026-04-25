@@ -104,10 +104,54 @@ export interface UnsupportedResult {
 
 export type SearchResponse = SearchResult | UnsupportedResult
 
-// Watchlist item as returned by GET /api/watchlist
+// Watchlist item as returned by GET /api/watchlist (legacy flat shape).
+// Retained as a type stub; the live API now returns WatchlistResponse below.
 export interface WatchlistEntry {
   marketSlug: string
   savedAt: string // ISO 8601
+}
+
+// GET /api/watchlist response — discriminated by kind so the listing page
+// can render markets and properties as independent tabs.
+export interface WatchlistMarketEntry {
+  marketSlug: string
+  savedAt: string
+  market: {
+    name: string
+    strStatus: string
+    countyName: string | null
+    freshnessStatus: string
+    permitRequired: string
+    ownerOccupancyRequired: string
+    lastReviewedAt: string
+  }
+}
+
+export interface WatchlistPropertyEntry {
+  propertyId: string
+  address: string
+  savedAt: string
+  property: {
+    latitude: number
+    longitude: number
+    city: string | null
+    stateCode: string | null
+    countyName: string | null
+    marketId: string | null
+    requirementsGeneratedAt: string | null
+    market: {
+      slug: string
+      name: string
+      strStatus: string
+      freshnessStatus: string
+      lastReviewedAt: string
+    } | null
+  }
+}
+
+export interface WatchlistResponse {
+  markets: WatchlistMarketEntry[]
+  properties: WatchlistPropertyEntry[]
 }
 
 // Geocoded address cache entry (shared across all users)
