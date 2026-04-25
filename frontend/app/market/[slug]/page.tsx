@@ -8,6 +8,9 @@ import SourceList from '@/components/SourceList'
 import FreshnessBadge from '@/components/FreshnessBadge'
 import WatchlistButton from '@/components/WatchlistButton'
 import Disclaimer from '@/components/Disclaimer'
+import PropertyMarketSwitcher from '@/components/PropertyMarketSwitcher'
+import MarketViewLogger from '@/components/MarketViewLogger'
+import { buildPropertyHref, buildMarketHrefFromProperty } from '@/lib/property-urls'
 import type { Market } from '@/types/market'
 
 // Tell Next.js which slugs to pre-render at build time
@@ -38,10 +41,13 @@ export async function generateMetadata({
 
 export default async function MarketPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { slug } = await params
+  const sp = await searchParams
 
   const raw = await db.market.findUnique({
     where: { slug },
@@ -105,8 +111,35 @@ export default async function MarketPage({
     })),
   }
 
+  // Render the property↔market switcher only when the user arrived here from
+  // an address search. Direct slug navigation has no property context to flip to.
+  const fromProperty = sp.from === 'property'
+  const fromAddress = typeof sp.address === 'string' ? sp.address : undefined
+  const fromMarketId = typeof sp.marketId === 'string' ? sp.marketId : undefined
+  const fromLat = typeof sp.lat === 'string' ? sp.lat : undefined
+  const fromLon = typeof sp.lon === 'string' ? sp.lon : undefined
+  const showSwitcher =
+    fromProperty && Boolean(fromAddress && fromMarketId && fromLat && fromLon)
+
+  const switcherCtx = showSwitcher
+    ? {
+        address: fromAddress!,
+        marketId: fromMarketId!,
+        lat: fromLat!,
+        lon: fromLon!,
+        slug: market.slug,
+        marketName: market.name,
+      }
+    : null
+  const propertyHref = switcherCtx ? buildPropertyHref(switcherCtx) : ''
+  const marketHref = switcherCtx ? buildMarketHrefFromProperty(switcherCtx) : ''
+
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
+      <MarketViewLogger
+        marketSlug={market.slug}
+        source={showSwitcher ? 'property' : 'direct'}
+      />
       {/* Back */}
       <Link
         href="/"
@@ -125,15 +158,47 @@ export default async function MarketPage({
         Back to search
       </Link>
 
-      {/* Market header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-medium text-gray-900 tracking-tight">{market.name}</h1>
-        <p className="text-gray-500 mt-1 text-sm">
-          {market.countyName}
-          {market.regionLabel && <span> · {market.regionLabel}</span>}
-          {' '}· {market.stateCode}
-        </p>
-      </div>
+      {showSwitcher ? (
+        <>
+          {/* Property is the user's anchor when arrived via address search —
+              keep the full address pinned at the top above the switcher. */}
+          <div className="mb-6">
+            <h1 className="text-3xl font-medium text-gray-900 tracking-tight">{fromAddress}</h1>
+          </div>
+
+          <div className="mb-6">
+            <PropertyMarketSwitcher
+              propertyHref={propertyHref}
+              marketHref={marketHref}
+              current="market"
+            />
+          </div>
+
+          {/* Smaller market identifier so the user knows which jurisdiction's
+              rules they're viewing — full H1 is reserved for the address above. */}
+          <div className="mb-6">
+            <h2 className="text-base font-medium text-gray-900">
+              Market Requirements — {market.name}
+            </h2>
+            <p className="text-gray-500 mt-0.5 text-xs">
+              {market.countyName}
+              {market.regionLabel && <span> · {market.regionLabel}</span>}
+              {' '}· {market.stateCode}
+            </p>
+          </div>
+        </>
+      ) : (
+        // Direct nav (search by market name, watchlist click, etc.) — keep the
+        // existing market H1 unchanged. No regression for non-property entry points.
+        <div className="mb-6">
+          <h1 className="text-3xl font-medium text-gray-900 tracking-tight">{market.name}</h1>
+          <p className="text-gray-500 mt-1 text-sm">
+            {market.countyName}
+            {market.regionLabel && <span> · {market.regionLabel}</span>}
+            {' '}· {market.stateCode}
+          </p>
+        </div>
+      )}
 
       {/* Compliance summary */}
       <ComplianceSummaryCard market={market} />

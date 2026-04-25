@@ -5,6 +5,30 @@ export type StrStatus = 'allowed' | 'conditional' | 'not_allowed'
 export type PermitRequired = 'yes' | 'no' | 'varies'
 export type OwnerOccupancy = 'yes' | 'no' | 'varies'
 export type FreshnessStatus = 'fresh' | 'review_due' | 'needs_review'
+// Property-level requirement strength — emitted by the property requirements agent.
+// Distinct from StrStatus: a single property can have many requirements at varying levels.
+export type RequirementLevel = 'required' | 'conditional' | 'informational'
+
+// Per-property compliance requirement returned by GET /api/property/requirements.
+// Mirrors the agent's PropertyRequirement output.
+export interface PropertyRequirement {
+  ruleKey: string
+  label: string
+  value: string
+  details?: string
+  codeRef?: string
+  codeUrl?: string
+  requirementLevel: RequirementLevel
+}
+
+export interface PropertyRequirementsResponse {
+  address: string
+  marketId: string
+  requirements: PropertyRequirement[]
+  confidenceNote: string
+  reviewFlags: string[]
+  disclaimerRequired: true
+}
 
 export interface MarketRule {
   ruleKey: string
@@ -52,9 +76,24 @@ export interface Market {
 
 // ─── API response shapes (BE contract reference) ────────────────────────────
 
+// Property context attached to address-resolved search hits so the UI can
+// route to /property and render per-address requirements without re-geocoding.
+export interface SearchResultProperty {
+  address: string             // normalizedAddress (Mapbox place_name) — Property cache key
+  latitude: number
+  longitude: number
+  city: string | null
+  countyName: string | null
+}
+
 export interface SearchResult {
   type: 'supported'
+  // 'address' = query was geocoded and resolved to a market via city/county.
+  // 'market'  = query matched a market slug, alias, or name directly.
+  // The UI uses this to decide whether to land on /property or /market/[slug].
+  resolution: 'address' | 'market'
   market: Pick<Market, 'id' | 'slug' | 'name' | 'strStatus'>
+  property?: SearchResultProperty   // present iff resolution === 'address'
   redirectUrl: string
 }
 
