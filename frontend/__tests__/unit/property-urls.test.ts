@@ -10,6 +10,7 @@ import { describe, it, expect } from 'vitest'
 import {
   buildPropertyHref,
   buildMarketHrefFromProperty,
+  parseAddressForDisplay,
 } from '@/lib/property-urls'
 
 const ctx = {
@@ -77,6 +78,28 @@ describe('buildMarketHrefFromProperty', () => {
   it('encodes slugs that contain special characters', () => {
     const url = buildMarketHrefFromProperty({ ...ctx, slug: 'west hollywood' })
     expect(url.startsWith('/market/west%20hollywood?')).toBe(true)
+  })
+})
+
+describe('parseAddressForDisplay', () => {
+  it('splits a standard Mapbox place_name on the first comma', () => {
+    const result = parseAddressForDisplay(
+      '1234 Ocean Way, Santa Monica, California 90405, United States'
+    )
+    expect(result.streetLine).toBe('1234 Ocean Way')
+    expect(result.locationLine).toBe('Santa Monica, California 90405, United States')
+  })
+
+  it('returns the full input as streetLine when there are no commas', () => {
+    const result = parseAddressForDisplay('1600 Pennsylvania Ave NW')
+    expect(result.streetLine).toBe('1600 Pennsylvania Ave NW')
+    expect(result.locationLine).toBe('')
+  })
+
+  it('trims whitespace on both lines', () => {
+    const result = parseAddressForDisplay('  100 Main St ,  Springfield, IL  ')
+    expect(result.streetLine).toBe('100 Main St')
+    expect(result.locationLine).toBe('Springfield, IL')
   })
 })
 

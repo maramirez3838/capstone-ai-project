@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import PropertyMarketSwitcher from '@/components/PropertyMarketSwitcher'
+import PropertyHeader from '@/components/PropertyHeader'
 import PropertyRequirementsList from '@/components/PropertyRequirementsList'
 import ConfidenceCallout from '@/components/ConfidenceCallout'
 import Disclaimer from '@/components/Disclaimer'
@@ -107,9 +108,7 @@ export default function PropertyContent() {
         Back to search
       </Link>
 
-      <div className="mb-6">
-        <h1 className="text-3xl font-medium text-gray-900 tracking-tight">{address}</h1>
-      </div>
+      <PropertyHeader address={address} />
 
       <div className="mb-6">
         <PropertyMarketSwitcher

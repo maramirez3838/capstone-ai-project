@@ -9,6 +9,7 @@ import FreshnessBadge from '@/components/FreshnessBadge'
 import WatchlistButton from '@/components/WatchlistButton'
 import Disclaimer from '@/components/Disclaimer'
 import PropertyMarketSwitcher from '@/components/PropertyMarketSwitcher'
+import PropertyHeader from '@/components/PropertyHeader'
 import MarketViewLogger from '@/components/MarketViewLogger'
 import { buildPropertyHref, buildMarketHrefFromProperty } from '@/lib/property-urls'
 import type { Market } from '@/types/market'
@@ -162,9 +163,7 @@ export default async function MarketPage({
         <>
           {/* Property is the user's anchor when arrived via address search —
               keep the full address pinned at the top above the switcher. */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-medium text-gray-900 tracking-tight">{fromAddress}</h1>
-          </div>
+          <PropertyHeader address={fromAddress!} />
 
           <div className="mb-6">
             <PropertyMarketSwitcher

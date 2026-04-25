@@ -47,3 +47,22 @@ export function buildMarketHrefFromProperty(ctx: PropertyUrlContext): string {
   return `/market/${encodeURIComponent(ctx.slug)}?${params.toString()}`
 }
 
+// Splits a Mapbox normalizedAddress (place_name) into street vs. location lines
+// for the PropertyHeader component. Mapbox returns full addresses formatted as:
+//   "1234 Ocean Way, Santa Monica, California 90405, United States"
+// The first segment is the street; the rest is city/region/postal/country.
+export function parseAddressForDisplay(address: string): {
+  streetLine: string
+  locationLine: string
+} {
+  const trimmed = address.trim()
+  const commaIdx = trimmed.indexOf(',')
+  if (commaIdx === -1) {
+    return { streetLine: trimmed, locationLine: '' }
+  }
+  return {
+    streetLine: trimmed.slice(0, commaIdx).trim(),
+    locationLine: trimmed.slice(commaIdx + 1).trim(),
+  }
+}
+
